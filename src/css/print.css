@@ -1,0 +1,33 @@
+/* Anulaciones específicas para la impresión */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  .sidebar, .top-header, .reports-selector-card, ::-webkit-scrollbar {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  .report-preview-panel {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  .report-table th {
+    background-color: #f1f5f9 !important;
+    color: black !important;
+    border-bottom: 2px solid black !important;
+  }
+  .report-table td {
+    color: black !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+  }
+  .report-summary-box {
+    border: 1px solid black !important;
+  }
+}

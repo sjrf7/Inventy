@@ -1,0 +1,552 @@
+/* --- Estilos de la vista de inicio de sesión de Inventy --- */
+
+.login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 50%, #0c1527 0%, #030712 100%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: var(--font-main);
+}
+
+/* Anulación del fondo del inicio de sesión en el tema claro */
+[data-theme="light"] .login-overlay {
+  background: radial-gradient(circle at 50% 50%, #f1f5f9 0%, #cbd5e1 100%);
+}
+
+/* Formas luminosas animadas del fondo */
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 1;
+  opacity: 0.45;
+  animation: blobOrbit 25s infinite alternate ease-in-out;
+}
+
+[data-theme="light"] .login-blob {
+  opacity: 0.2;
+}
+
+.blob-1 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, rgba(59, 130, 246, 0) 70%);
+  top: -80px;
+  left: -80px;
+  animation-duration: 20s;
+}
+
+.blob-2 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0) 70%);
+  bottom: -120px;
+  right: -100px;
+  animation-duration: 25s;
+  animation-delay: -5s;
+}
+
+.blob-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(30, 41, 59, 0.35) 0%, rgba(30, 41, 59, 0) 70%);
+  top: 40%;
+  left: 55%;
+  animation-duration: 18s;
+  animation-delay: -8s;
+}
+
+@keyframes blobOrbit {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(80px, 50px) scale(1.1) rotate(180deg);
+  }
+  100% {
+    transform: translate(-40px, -80px) scale(0.9) rotate(360deg);
+  }
+}
+
+/* Tarjeta de inicio de sesión con efecto cristal (glassmorphism) */
+.login-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 32px;
+  background: rgba(15, 22, 38, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  animation: loginCardIntro 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme="light"] .login-card {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.1);
+}
+
+@keyframes loginCardIntro {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Transiciones de salida y de acceso exitoso */
+.login-overlay.exit-active {
+  animation: loginOverlayExit 0.6s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+
+.login-overlay.exit-active .login-card {
+  animation: loginCardExit 0.5s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+
+@keyframes loginOverlayExit {
+  to {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+}
+
+@keyframes loginCardExit {
+  to {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.95);
+  }
+}
+
+/* Encabezado de la tarjeta */
+.login-card-header {
+  margin-bottom: 32px;
+}
+
+.login-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px auto;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.18);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.login-card:hover .login-logo {
+  transform: scale(1.08) rotate(5deg);
+}
+
+.login-logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+.login-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.login-subtitle {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Estilos del formulario */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Campos de entrada interactivos flotantes */
+.login-input-group {
+  position: relative;
+  width: 100%;
+}
+
+.login-input-group input {
+  width: 100%;
+  padding: 14px 16px 14px 44px;
+  background: rgba(29, 40, 63, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  font-size: 14.5px;
+  font-family: var(--font-main);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .login-input-group input {
+  background: rgba(241, 245, 249, 0.8);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.login-input-group input:focus {
+  background: rgba(29, 40, 63, 0.6);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="light"] .login-input-group input:focus {
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* Icono del campo de entrada */
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  transition: color 0.3s;
+}
+
+.login-input-group input:focus ~ .input-icon {
+  color: var(--primary);
+}
+
+.input-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Etiqueta flotante */
+.login-input-group label {
+  position: absolute;
+  left: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), font-size 0.25s, color 0.25s, top 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Lógica de desplazamiento al enfocar y con la técnica de placeholder-shown */
+.login-input-group input:focus ~ label,
+.login-input-group input:not(:placeholder-shown) ~ label {
+  top: 0;
+  transform: translateY(-100%);
+  font-size: 11px;
+  color: var(--primary);
+  left: 12px;
+}
+
+/* Botón para mostrar u ocultar la contraseña */
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--text-primary);
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Opciones adicionales (Recordarme) */
+.login-options {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 2px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-me input {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background: rgba(29, 40, 63, 0.4);
+  border-radius: 5px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+[data-theme="light"] .checkbox-custom {
+  background: rgba(241, 245, 249, 0.8);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.remember-me input:checked ~ .checkbox-custom {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.checkbox-custom::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s;
+}
+
+.remember-me input:checked ~ .checkbox-custom::after {
+  transform: rotate(45deg) scale(1);
+}
+
+/* Estilo del mensaje de error con animación */
+.login-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  animation: shakeError 0.4s ease-in-out;
+}
+
+[data-theme="light"] .login-error {
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+}
+
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* Botón de envío del inicio de sesión */
+.btn-login {
+  position: relative;
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.btn-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+}
+
+.btn-login:active {
+  transform: translateY(1px);
+}
+
+.btn-login:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Indicador de carga dentro del botón */
+.login-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Efecto al pasar el cursor por el botón de cerrar sesión de la barra lateral */
+.btn-logout {
+  opacity: 0.65;
+  transition: opacity var(--transition-fast), color var(--transition-fast) !important;
+}
+
+.btn-logout:hover {
+  opacity: 1;
+  color: var(--danger) !important;
+}
+
+/* --- Estilos personalizados de SweetAlert2 --- */
+.swal-popup-custom {
+  background: rgba(15, 22, 38, 0.9) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 24px !important;
+  font-family: var(--font-main) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+  padding: 30px 24px !important;
+}
+
+[data-theme="light"] .swal-popup-custom {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08) !important;
+}
+
+.swal-title-custom {
+  color: var(--text-primary) !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  margin-top: 10px !important;
+}
+
+.swal-text-custom {
+  color: var(--text-secondary) !important;
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+}
+
+.swal-btn-confirm {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%) !important;
+  border: none !important;
+  border-radius: 14px !important;
+  padding: 12px 28px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  outline: none !important;
+  margin: 0 8px !important;
+}
+
+.swal-btn-confirm:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.3) !important;
+}
+
+.swal-btn-cancel {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 12px 28px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  outline: none !important;
+  margin: 0 8px !important;
+}
+
+[data-theme="light"] .swal-btn-cancel {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.swal-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .swal-btn-cancel:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+
+.swal-icon-custom {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+/* Animaciones personalizadas de las alertas */
+@keyframes swalScaleIn {
+  from {
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes swalScaleOut {
+  from {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95) translateY(5px);
+    opacity: 0;
+  }
+}
+
+.swal-show-animation {
+  animation: swalScaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.swal-hide-animation {
+  animation: swalScaleOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+

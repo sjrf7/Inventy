@@ -1,0 +1,343 @@
+/**
+ * Generador de Reportes de Inventy
+ */
+
+/**
+ * Construye e inyecta el HTML del reporte imprimible seleccionado.
+ * @param {Array} assets - Lista de bienes actuales
+ * @param {Object} STATUSES - Mapa de metadatos de estados
+ * @param {Array} DEPARTMENTS - Lista de direcciones
+ */
+export function generateReport(assets, STATUSES, DEPARTMENTS) {
+  const reportTypeEl = document.getElementById("report-type");
+  const reportArea = document.getElementById("printable-report-area");
+  
+  if (!reportTypeEl || !reportArea) return;
+
+  const reportType = reportTypeEl.value;
+  reportArea.innerHTML = "";
+  
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("es-ES");
+  const timeStr = now.toLocaleTimeString("es-ES", { hour: '2-digit', minute: '2-digit' });
+  
+  const userStr = localStorage.getItem("inventy_user") || sessionStorage.getItem("inventy_user");
+  let currentUserStr = "Samuel (Soporte)";
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr);
+      let role = u.role || 'Soporte';
+      if (role.toLowerCase() === 'soporte ti') {
+        role = 'Soporte';
+      }
+      currentUserStr = `${u.fullname || u.username} (${role})`;
+    } catch (e) {}
+  }
+
+  let html = `
+    <div class="report-header">
+      <div class="report-brand">
+        <div class="brand-logo" style="width:28px; height:28px;">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+            <path d="M21 16.5v-9L12 3 3 7.5v9l9 4.5 9-4.5ZM12 21V12M12 12l9-4.5M12 12L3 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="report-brand-name">INVENTY</span>
+      </div>
+      <div class="report-metadata">
+        <span><strong>Fecha de Generación:</strong> ${dateStr}</span>
+        <span><strong>Hora:</strong> ${timeStr}</span>
+        <span><strong>Generado por:</strong> ${currentUserStr}</span>
+      </div>
+    </div>
+  `;
+  
+  if (reportType === "institucion") {
+    html += `<h2 class="report-main-title">Informe General del Estado de Bienes Nacionales</h2>`;
+    
+    const total = assets.length;
+    const active = assets.filter(a => a.status === "activo").length;
+    const maintenance = assets.filter(a => a.status === "reparacion").length;
+    const retired = assets.filter(a => a.status === "desincorporado").length;
+    
+    html += `
+      <div class="report-grid-summary">
+        <div class="report-summary-box">
+          <div class="report-summary-val">${total}</div>
+          <div class="report-summary-lbl">Bienes Registrados</div>
+        </div>
+        <div class="report-summary-box" style="border-color: var(--success);">
+          <div class="report-summary-val" style="color:var(--success);">${active}</div>
+          <div class="report-summary-lbl">Activos</div>
+        </div>
+        <div class="report-summary-box" style="border-color: var(--warning);">
+          <div class="report-summary-val" style="color:var(--warning);">${maintenance}</div>
+          <div class="report-summary-lbl">En Soporte / Falla</div>
+        </div>
+        <div class="report-summary-box" style="border-color: var(--danger);">
+          <div class="report-summary-val" style="color:var(--danger);">${retired}</div>
+          <div class="report-summary-lbl">Desincorporados</div>
+        </div>
+      </div>
+      
+      <h4 style="margin: 20px 0 10px 0;">Distribución por Direcciones e Institución</h4>
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Dirección / Oficina</th>
+              <th>Bienes Totales</th>
+              <th>Activos</th>
+              <th>En Reparación</th>
+              <th>Desincorporados</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    DEPARTMENTS.forEach(dept => {
+      const deptAssets = assets.filter(a => a.department === dept);
+      const dTotal = deptAssets.length;
+      const dActive = deptAssets.filter(a => a.status === "activo").length;
+      const dRep = deptAssets.filter(a => a.status === "reparacion").length;
+      const dRet = deptAssets.filter(a => a.status === "desincorporado").length;
+      
+      html += `
+        <tr>
+          <td><strong>${dept}</strong></td>
+          <td>${dTotal}</td>
+          <td>${dActive}</td>
+          <td>${dRep}</td>
+          <td>${dRet}</td>
+        </tr>
+      `;
+    });
+    
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+  } else if (reportType === "direccion") {
+    const selectedDept = document.getElementById("report-param-dept")?.value || DEPARTMENTS[0];
+    const deptAssets = assets.filter(a => a.department === selectedDept);
+    
+    html += `
+      <h2 class="report-main-title">Inventario Detallado de Bienes</h2>
+      <h3 style="text-align:center; color:var(--text-secondary); margin-bottom: 20px;">Dirección: ${selectedDept}</h3>
+      
+      <div class="report-grid-summary" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="report-summary-box">
+          <div class="report-summary-val">${deptAssets.length}</div>
+          <div class="report-summary-lbl">Bienes en Oficina</div>
+        </div>
+        <div class="report-summary-box" style="border-color: var(--success);">
+          <div class="report-summary-val" style="color:var(--success);">${deptAssets.filter(a => a.status === "activo").length}</div>
+          <div class="report-summary-lbl">Operativos</div>
+        </div>
+        <div class="report-summary-box" style="border-color: var(--warning);">
+          <div class="report-summary-val" style="color:var(--warning);">${deptAssets.filter(a => a.status === "reparacion").length}</div>
+          <div class="report-summary-lbl">Falla / Reparación</div>
+        </div>
+      </div>
+      
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>NRO Bien</th>
+              <th>Nombre del Equipo</th>
+              <th>Marca / Modelo</th>
+              <th>Número de Serie</th>
+              <th>Estado</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    if (deptAssets.length === 0) {
+      html += `<tr><td colspan="6" style="text-align:center;">No hay bienes registrados en esta dirección.</td></tr>`;
+    } else {
+      deptAssets.forEach(a => {
+        const statusLabel = STATUSES[a.status]?.label || a.status;
+        const brand = a.technicalSpecs?.brand || "-";
+        const model = a.technicalSpecs?.model || "-";
+        const serial = a.technicalSpecs?.serialNumber || "-";
+        
+        html += `
+          <tr>
+            <td><strong>${a.nroBien}</strong></td>
+            <td>${a.name}</td>
+            <td>${brand} / ${model}</td>
+            <td><code>${serial}</code></td>
+            <td><span style="color: ${STATUSES[a.status]?.color}">${statusLabel}</span></td>
+            <td>${a.description || "-"}</td>
+          </tr>
+        `;
+      });
+    }
+    
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+  } else if (reportType === "estado") {
+    const selectedStatus = document.getElementById("report-param-status")?.value || "reparacion";
+    const statusAssets = assets.filter(a => a.status === selectedStatus);
+    const statusInfo = STATUSES[selectedStatus] || { label: selectedStatus, color: "#FFF" };
+    
+    html += `
+      <h2 class="report-main-title">Reporte Especial de Bienes en Estado: ${statusInfo.label}</h2>
+      <p style="text-align:center; color:var(--text-muted); margin-bottom: 20px;">Listado de control para soporte técnico, adquisiciones y desincorporación.</p>
+      
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>NRO Bien</th>
+              <th>Nombre del Equipo</th>
+              <th>Ubicación / Dirección</th>
+              <th>Modelo y Componentes</th>
+              <th>Último Diagnóstico Técnico</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    if (statusAssets.length === 0) {
+      html += `<tr><td colspan="5" style="text-align:center;">No hay bienes registrados en este estado.</td></tr>`;
+    } else {
+      statusAssets.forEach(a => {
+        const specsStr = `${a.technicalSpecs?.brand || ""} ${a.technicalSpecs?.model || ""}`.trim() || "-";
+        const lastReport = a.reports && a.reports.length > 0 ? a.reports[a.reports.length - 1] : null;
+        const diagnosis = lastReport ? lastReport.diagnosis : "Sin incidencias registradas en soporte.";
+        
+        html += `
+          <tr>
+            <td><strong>${a.nroBien}</strong></td>
+            <td>${a.name}</td>
+            <td>${a.department}</td>
+            <td>${specsStr}</td>
+            <td>${diagnosis}</td>
+          </tr>
+        `;
+      });
+    }
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else if (reportType === "condicion") {
+    html += `
+      <h2 class="report-main-title">Informe de Condición, Operatividad y Obsolescencia</h2>
+      <p style="text-align:center; color:var(--text-muted); margin-bottom: 20px;">Listado analítico del estado físico y tecnológico de los bienes nacionales.</p>
+      
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>NRO Bien</th>
+              <th>Equipo / Características</th>
+              <th>Dirección</th>
+              <th>Condición de Operatividad</th>
+              <th>Defectos / Observaciones Técnicas</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    if (assets.length === 0) {
+      html += `<tr><td colspan="5" style="text-align:center;">No hay bienes registrados.</td></tr>`;
+    } else {
+      assets.forEach(a => {
+        // 1. Especifaciones técnicas
+        const specs = [];
+        if (a.brand) specs.push(a.brand);
+        if (a.model) specs.push(a.model);
+        if (a.processor) specs.push(a.processor);
+        if (a.ram) specs.push(`RAM: ${a.ram}`);
+        if (a.storage) specs.push(`Alm: ${a.storage}`);
+        const specsStr = specs.length > 0 ? specs.join(" | ") : "Sin especificaciones registradas";
+
+        // 2. Determinar condición
+        let conditionLabel = "Óptimo";
+        let conditionColor = "var(--success)";
+        
+        if (a.status === "desincorporado") {
+          conditionLabel = "Obsoleto (Fuera de Servicio)";
+          conditionColor = "var(--danger)";
+        } else if (a.status === "reparacion") {
+          conditionLabel = "Defectuoso (Mejorable)";
+          conditionColor = "var(--warning)";
+        } else {
+          const lowerDesc = (a.description || "").toLowerCase();
+          if (lowerDesc.includes("obsoleto") || lowerDesc.includes("viejo") || lowerDesc.includes("desgaste")) {
+            conditionLabel = "Obsoleto (En uso)";
+            conditionColor = "var(--danger)";
+          } else if (lowerDesc.includes("lento") || lowerDesc.includes("actualizar") || lowerDesc.includes("limpieza") || (a.ram && (a.ram.includes("4 GB") || a.ram.includes("2 GB")))) {
+            conditionLabel = "Mejorable (Operativo)";
+            conditionColor = "var(--warning)";
+          }
+        }
+
+        // 3. Determinar observaciones/defectos
+        let observations = "Operando en condiciones normales sin fallas reportadas.";
+        if (a.status === "reparacion" || a.status === "desincorporado") {
+          const lastReport = a.reports && a.reports.length > 0 ? a.reports[a.reports.length - 1] : null;
+          if (lastReport) {
+            observations = `<strong>Diagnóstico técnico:</strong> ${lastReport.diagnosis}`;
+          } else if (a.description) {
+            observations = `<strong>Detalles del reporte:</strong> ${a.description}`;
+          } else {
+            observations = "Equipo en revisión técnica por falla no detallada.";
+          }
+        }
+
+        html += `
+          <tr>
+            <td><strong>${a.nroBien}</strong></td>
+            <td>
+              <div style="font-weight:600; color:var(--text-primary);">${a.name}</div>
+              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">${specsStr}</div>
+            </td>
+            <td>${a.department}</td>
+            <td>
+              <span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; color:${conditionColor}">
+                <span style="width:8px; height:8px; border-radius:50%; background-color:${conditionColor}"></span>
+                ${conditionLabel}
+              </span>
+            </td>
+            <td style="font-size:12.5px; color:var(--text-secondary); max-width:280px; line-height:1.4;">${observations}</td>
+          </tr>
+        `;
+      });
+    }
+    
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+  
+  // Agrega la sección de firmas al final del reporte
+  html += `
+    <div class="report-footer-signatures">
+      <div class="signature-line">
+        <strong>Preparado por:</strong><br>
+        Soporte Técnico y Telecomunicaciones
+      </div>
+      <div class="signature-line">
+        <strong>Recibido conforme por:</strong><br>
+        Jefe de Dirección / Administración de Bienes
+      </div>
+    </div>
+  `;
+  
+  reportArea.innerHTML = html;
+}

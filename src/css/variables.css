@@ -1,0 +1,72 @@
+/* Hoja de Estilos de Inventy - Moderna, Minimalista y de Alto Rendimiento */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* --- Variables de tema --- */
+:root {
+  --font-main: 'Plus Jakarta Sans', sans-serif;
+  
+  /* Paleta de colores (tema oscuro por defecto) */
+  --bg-primary: #05070f;
+  --bg-secondary: #0a0c16;
+  --bg-tertiary: #121522;
+  --bg-glass: rgba(10, 12, 22, 0.85);
+  --bg-glass-card: rgba(22, 26, 44, 0.45);
+  --border-color: rgba(59, 130, 246, 0.06);
+  --border-focus: rgba(59, 130, 246, 0.35);
+  
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  
+  /* Colores de acento */
+  --primary: #3B82F6;
+  --primary-glow: rgba(59, 130, 246, 0.12);
+  --primary-hover: #2563EB;
+  
+  --success: #10B981;
+  --success-glow: rgba(16, 185, 129, 0.1);
+  --warning: #F59E0B;
+  --warning-glow: rgba(245, 158, 11, 0.1);
+  --danger: #EF4444;
+  --danger-glow: rgba(239, 68, 68, 0.1);
+  --info: #8B5CF6;
+  --info-glow: rgba(139, 92, 246, 0.1);
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.9);
+  
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  
+  --sidebar-width: 260px;
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Anulaciones del tema claro */
+[data-theme="light"] {
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #E2E8F0;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-glass-card: rgba(241, 245, 249, 0.6);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(59, 130, 246, 0.4);
+  
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  
+  --primary-glow: rgba(59, 130, 246, 0.15);
+  --success-glow: rgba(16, 185, 129, 0.15);
+  --warning-glow: rgba(245, 158, 11, 0.15);
+  --danger-glow: rgba(239, 68, 68, 0.15);
+  --info-glow: rgba(139, 92, 246, 0.15);
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 24px rgba(148, 163, 184, 0.15);
+  --shadow-lg: 0 16px 48px rgba(148, 163, 184, 0.25);
+}
