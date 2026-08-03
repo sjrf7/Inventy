@@ -12,7 +12,8 @@ export const DEPARTMENTS = [
   "Potestad Investigativa",
   "Talento Humano",
   "Archivo Central",
-  "Seguridad Física"
+  "Seguridad Física",
+  "Dirección de Informática y Sistemas"
 ];
 
 export const STATUSES = {
