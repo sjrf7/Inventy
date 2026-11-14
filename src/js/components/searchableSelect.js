@@ -47,6 +47,10 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   searchInput.className = "form-input searchable-select-input";
   searchInput.placeholder = placeholder;
   searchInput.autocomplete = "off";
+  searchInput.setAttribute("role", "combobox");
+  searchInput.setAttribute("aria-autocomplete", "list");
+  searchInput.setAttribute("aria-expanded", "false");
+  searchInput.setAttribute("aria-controls", `searchable-select-list-${selectId}`);
 
   // Icono de flecha
   const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -63,6 +67,8 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   // 3. Crear el panel desplegable
   const dropdown = document.createElement("div");
   dropdown.className = "searchable-select-dropdown";
+  dropdown.id = `searchable-select-list-${selectId}`;
+  dropdown.setAttribute("role", "listbox");
   container.appendChild(dropdown);
 
   // 4. Marcar como mejorado
@@ -82,11 +88,11 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
       searchInput.value = "";
       filterOptions("", dropdown);
     }
-    container.classList.add("open");
+    setOpen(container, true);
   });
 
   searchInput.addEventListener("focus", () => {
-    container.classList.add("open");
+    setOpen(container, true);
   });
 
   // Filtra la lista mientras se escribe en el campo de búsqueda
@@ -98,7 +104,7 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   // Cierra el desplegable al hacer clic fuera de él
   document.addEventListener("click", (e) => {
     if (!container.contains(e.target)) {
-      container.classList.remove("open");
+      setOpen(container, false);
       syncInputWithValue(selectElement, searchInput, assets);
     }
   });
@@ -118,7 +124,7 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       if (!container.classList.contains("open")) {
-        container.classList.add("open");
+        setOpen(container, true);
         return;
       }
       if (currentIndex !== -1) items[currentIndex].classList.remove("highlighted");
@@ -137,7 +143,7 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
         items[currentIndex].click();
       }
     } else if (e.key === "Escape") {
-      container.classList.remove("open");
+      setOpen(container, false);
       searchInput.blur();
       syncInputWithValue(selectElement, searchInput, assets);
     }
@@ -161,6 +167,8 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
     const item = document.createElement("div");
     item.className = "searchable-select-item";
     item.dataset.value = opt.value;
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", "false");
 
     // Diseño enriquecido del bien si coincide con un registro del estado
     const asset = assets.find(a => a.id === opt.value);
@@ -169,13 +177,13 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
       const statusClass = `status-${asset.status}`;
       
       item.innerHTML = `
-        <img src="${escapeAttr(asset.photo || 'data:image/svg+xml;utf8,<svg viewBox=\"0 0 100 100\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"100\" height=\"100\" fill=\"%231E293B\"/><path d=\"M20 30h60v40H20z\" stroke=\"%23475569\" stroke-width=\"4\"/></svg>')}" alt="${escapeAttr(asset.name)}">
+        <img src="${escapeAttr(asset.photo || 'data:image/svg+xml;utf8,<svg viewBox=\"0 0 100 100\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"100\" height=\"100\" fill=\"%231E293B\"/><path d=\"M20 30h60v40H20z\" stroke=\"%23475569\" stroke-width=\"4\"/></svg>')}" alt="">
         <div class="searchable-select-item-info">
-          <div class="searchable-select-item-name">${asset.name}</div>
+          <div class="searchable-select-item-name">${escapeAttr(asset.name)}</div>
           <div class="searchable-select-item-sub">
-            <span class="searchable-select-item-badge">${asset.nroBien}</span>
-            <span style="font-size: 11px; color: var(--text-muted);">${asset.department}</span>
-            <span class="searchable-select-status-badge ${statusClass}">${statusLabel}</span>
+            <span class="searchable-select-item-badge">${escapeAttr(asset.nroBien)}</span>
+            <span class="searchable-select-item-department">${escapeAttr(asset.department || "Sin departamento")}</span>
+            <span class="searchable-select-status-badge ${statusClass}">${escapeAttr(statusLabel)}</span>
           </div>
         </div>
       `;
@@ -185,7 +193,7 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
       // Alternativa con el texto estándar de la opción
       item.innerHTML = `
         <div class="searchable-select-item-info">
-          <div class="searchable-select-item-name">${opt.textContent}</div>
+          <div class="searchable-select-item-name">${escapeAttr(opt.textContent)}</div>
         </div>
       `;
       item.dataset.search = opt.textContent.toLowerCase();
@@ -197,10 +205,14 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
       selectElement.dispatchEvent(new Event("change"));
       
       searchInput.value = opt.textContent;
-      dropdown.querySelectorAll(".searchable-select-item").forEach(i => i.classList.remove("highlighted"));
+      dropdown.querySelectorAll(".searchable-select-item").forEach(i => {
+        i.classList.remove("highlighted");
+        i.setAttribute("aria-selected", "false");
+      });
       item.classList.add("highlighted");
+      item.setAttribute("aria-selected", "true");
       
-      selectElement.parentElement.classList.remove("open");
+      setOpen(selectElement.parentElement, false);
     });
 
     dropdown.appendChild(item);
@@ -241,6 +253,16 @@ function filterOptions(query, dropdown) {
   if (noResults) {
     noResults.style.display = matches === 0 ? "block" : "none";
   }
+}
+
+/**
+ * Abre o cierra la lista desplegable manteniendo sincronizado el estado ARIA.
+ */
+function setOpen(container, isOpen) {
+  if (!container) return;
+  container.classList.toggle("open", isOpen);
+  const input = container.querySelector(".searchable-select-input");
+  if (input) input.setAttribute("aria-expanded", String(isOpen));
 }
 
 /**
