@@ -1,4 +1,5 @@
 import { enhanceSelectWithSearch } from '../components/searchableSelect.js';
+import { getStatusInfo, isInSupport } from '../utils.js';
 
 /**
  * Configura y rellena los campos de entrada de la vista de soporte técnico.
@@ -42,17 +43,17 @@ export function renderPendingSupportList(assets, STATUSES) {
 
   container.innerHTML = "";
   
-  const pendingAssets = assets.filter(a => a.status === "reparacion");
+  const pendingAssets = assets.filter(a => isInSupport(a.status));
   if (counterEl) counterEl.textContent = pendingAssets.length;
   
   if (pendingAssets.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding: 40px; background-color: var(--bg-glass-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px; color: var(--success); margin-bottom: 12px;">
+      <div class="support-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 11.08 12 19 9 16"/><circle cx="12" cy="12" r="10"/>
         </svg>
         <h4>Al día</h4>
-        <p style="color: var(--text-muted); font-size:12px; margin-top: 4px;">No hay equipos con fallas pendientes en laboratorio.</p>
+        <p>No hay equipos con fallas pendientes en laboratorio.</p>
       </div>
     `;
     return;
@@ -62,7 +63,7 @@ export function renderPendingSupportList(assets, STATUSES) {
     const card = document.createElement("div");
     card.className = "issue-card";
     
-    const statusInfo = STATUSES[asset.status] || { label: asset.status };
+    const statusInfo = getStatusInfo(asset.status, STATUSES);
     const lastReport = asset.reports && asset.reports.length > 0 ? asset.reports[asset.reports.length - 1] : null;
     const lastDiagnosis = lastReport ? lastReport.diagnosis : "Sin diagnóstico registrado.";
     

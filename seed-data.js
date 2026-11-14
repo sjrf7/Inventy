@@ -19,6 +19,7 @@ export const DEPARTMENTS = [
 export const STATUSES = {
   activo: { label: "Activo", color: "#10B981", bg: "rgba(16, 185, 129, 0.15)" },
   reparacion: { label: "En Reparación", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.15)" },
+  espera_repuesto: { label: "Espera de Repuesto", color: "#8B5CF6", bg: "rgba(139, 92, 246, 0.15)" },
   desincorporado: { label: "Desincorporado", color: "#EF4444", bg: "rgba(239, 68, 68, 0.15)" }
 };
 

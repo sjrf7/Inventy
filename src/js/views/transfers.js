@@ -76,7 +76,7 @@ export function renderTransfersTimeline(assets) {
   
   if (transfers.length === 0) {
     timeline.innerHTML = `
-      <div style="text-align:center; padding:30px; color: var(--text-muted)">
+      <div class="timeline-empty">
         No hay traspasos registrados aún.
       </div>
     `;

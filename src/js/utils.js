@@ -27,6 +27,64 @@ export function getAssetFallbackImage(name = "") {
 }
 
 /**
+ * Devuelve los metadatos de un estado, con una etiqueta legible para estados
+ * no contemplados en la lista base.
+ * @param {string} status - Clave del estado
+ * @param {Object} statuses - Mapa de estados disponibles
+ * @returns {{label: string, color: string, bg: string}}
+ */
+export function getStatusInfo(status, statuses) {
+  if (statuses && statuses[status]) return statuses[status];
+
+  const fallbackLabel = String(status || "Sin estado")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, char => char.toUpperCase());
+
+  return { label: fallbackLabel, color: "var(--text-muted)", bg: "var(--bg-tertiary)" };
+}
+
+/**
+ * Combina el catálogo institucional de direcciones con las direcciones que
+ * realmente existen en el inventario, sin duplicados.
+ * @param {Array} assets - Bienes registrados
+ * @param {Array} canonicalDepartments - Catálogo base de direcciones
+ * @returns {Array<string>}
+ */
+export function getDepartmentOptions(assets = [], canonicalDepartments = []) {
+  const seen = new Set();
+  const present = [];
+
+  // Las direcciones con bienes registrados aparecen primero, en orden alfabético.
+  assets.forEach(asset => {
+    const name = String(asset.department || "").trim();
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    present.push(name);
+  });
+  present.sort((a, b) => a.localeCompare(b, "es"));
+
+  // El catálogo institucional completa la lista sin duplicar direcciones existentes.
+  const remaining = [];
+  canonicalDepartments.forEach(dept => {
+    const name = String(dept || "").trim();
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    remaining.push(name);
+  });
+
+  return [...present, ...remaining];
+}
+
+/**
+ * Indica si un bien requiere atención del área de soporte.
+ * @param {string} status - Clave del estado
+ * @returns {boolean}
+ */
+export function isInSupport(status) {
+  return status !== "activo" && status !== "desincorporado";
+}
+
+/**
  * Escapa un valor para insertarlo de forma segura dentro de un atributo HTML.
  * Evita que las comillas o símbolos de un SVG (data URI) rompan el atributo.
  * @param {string} value - Valor a escapar
