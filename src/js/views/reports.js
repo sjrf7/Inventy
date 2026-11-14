@@ -2,6 +2,9 @@
  * Generador de Reportes de Inventy
  */
 
+import { getDepartmentOptions, getStatusInfo, isInSupport } from '../utils.js';
+import { animateCount, staggerChildren } from '../motion.js';
+
 /**
  * Construye e inyecta el HTML del reporte imprimible seleccionado.
  * @param {Array} assets - Lista de bienes actuales
@@ -15,7 +18,11 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
   if (!reportTypeEl || !reportArea) return;
 
   const reportType = reportTypeEl.value;
+  const departments = getDepartmentOptions(assets, DEPARTMENTS);
   reportArea.innerHTML = "";
+
+  let contextLabel = "Informe general";
+  let contextDetail = `${assets.length} ${assets.length === 1 ? "bien registrado" : "bienes registrados"}`;
   
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-ES");
@@ -57,7 +64,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
     
     const total = assets.length;
     const active = assets.filter(a => a.status === "activo").length;
-    const maintenance = assets.filter(a => a.status === "reparacion").length;
+    const maintenance = assets.filter(a => isInSupport(a.status)).length;
     const retired = assets.filter(a => a.status === "desincorporado").length;
     
     html += `
@@ -88,18 +95,30 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
               <th>Dirección / Oficina</th>
               <th>Bienes Totales</th>
               <th>Activos</th>
-              <th>En Reparación</th>
+              <th>En Soporte</th>
               <th>Desincorporados</th>
             </tr>
           </thead>
           <tbody>
     `;
     
-    DEPARTMENTS.forEach(dept => {
+    const reportDepartments = departments
+      .map(dept => ({
+        dept,
+        total: assets.filter(a => a.department === dept).length
+      }))
+      .filter(row => row.total > 0)
+      .sort((a, b) => b.total - a.total || a.dept.localeCompare(b.dept, "es"));
+
+    if (reportDepartments.length === 0) {
+      html += `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No hay direcciones con bienes registrados.</td></tr>`;
+    }
+
+    reportDepartments.forEach(({ dept }) => {
       const deptAssets = assets.filter(a => a.department === dept);
       const dTotal = deptAssets.length;
       const dActive = deptAssets.filter(a => a.status === "activo").length;
-      const dRep = deptAssets.filter(a => a.status === "reparacion").length;
+      const dRep = deptAssets.filter(a => isInSupport(a.status)).length;
       const dRet = deptAssets.filter(a => a.status === "desincorporado").length;
       
       html += `
@@ -120,8 +139,10 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
     `;
     
   } else if (reportType === "direccion") {
-    const selectedDept = document.getElementById("report-param-dept")?.value || DEPARTMENTS[0];
+    const selectedDept = document.getElementById("report-param-dept")?.value || departments[0] || "Sin dirección";
     const deptAssets = assets.filter(a => a.department === selectedDept);
+    contextLabel = "Detalle por dirección";
+    contextDetail = selectedDept;
     
     html += `
       <h2 class="report-main-title">Inventario Detallado de Bienes</h2>
@@ -137,7 +158,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
           <div class="report-summary-lbl">Operativos</div>
         </div>
         <div class="report-summary-box" style="border-color: var(--warning);">
-          <div class="report-summary-val" style="color:var(--warning);">${deptAssets.filter(a => a.status === "reparacion").length}</div>
+          <div class="report-summary-val" style="color:var(--warning);">${deptAssets.filter(a => isInSupport(a.status)).length}</div>
           <div class="report-summary-lbl">Falla / Reparación</div>
         </div>
       </div>
@@ -161,7 +182,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
       html += `<tr><td colspan="6" style="text-align:center;">No hay bienes registrados en esta dirección.</td></tr>`;
     } else {
       deptAssets.forEach(a => {
-        const statusLabel = STATUSES[a.status]?.label || a.status;
+        const statusInfo = getStatusInfo(a.status, STATUSES);
         const brand = a.technicalSpecs?.brand || "-";
         const model = a.technicalSpecs?.model || "-";
         const serial = a.technicalSpecs?.serialNumber || "-";
@@ -172,7 +193,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
             <td>${a.name}</td>
             <td>${brand} / ${model}</td>
             <td><code>${serial}</code></td>
-            <td><span style="color: ${STATUSES[a.status]?.color}">${statusLabel}</span></td>
+            <td><span style="color: ${statusInfo.color}">${statusInfo.label}</span></td>
             <td>${a.description || "-"}</td>
           </tr>
         `;
@@ -188,7 +209,9 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
   } else if (reportType === "estado") {
     const selectedStatus = document.getElementById("report-param-status")?.value || "reparacion";
     const statusAssets = assets.filter(a => a.status === selectedStatus);
-    const statusInfo = STATUSES[selectedStatus] || { label: selectedStatus, color: "#FFF" };
+    const statusInfo = getStatusInfo(selectedStatus, STATUSES);
+    contextLabel = "Detalle por estado";
+    contextDetail = statusInfo.label;
     
     html += `
       <h2 class="report-main-title">Reporte Especial de Bienes en Estado: ${statusInfo.label}</h2>
@@ -233,6 +256,8 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
       </div>
     `;
   } else if (reportType === "condicion") {
+    contextLabel = "Condición y operatividad";
+    contextDetail = `${assets.length} ${assets.length === 1 ? "equipo evaluado" : "equipos evaluados"}`;
     html += `
       <h2 class="report-main-title">Informe de Condición, Operatividad y Obsolescencia</h2>
       <p style="text-align:center; color:var(--text-muted); margin-bottom: 20px;">Listado analítico del estado físico y tecnológico de los bienes nacionales.</p>
@@ -340,4 +365,24 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
   `;
   
   reportArea.innerHTML = html;
+
+  // Entrada del documento y de sus filas
+  reportArea.classList.remove("report-enter");
+  void reportArea.offsetWidth;
+  reportArea.classList.add("report-enter");
+  staggerChildren(reportArea, ".report-table tbody tr", { step: 18, max: 12 });
+
+  // Los indicadores numéricos se cuentan desde cero
+  reportArea.querySelectorAll(".report-summary-val").forEach(valueEl => {
+    const value = parseInt(valueEl.textContent.replace(/\D/g, ""), 10);
+    if (!Number.isNaN(value)) {
+      animateCount(valueEl, value, { duration: 620 });
+    }
+  });
+
+  // Actualiza el contexto del selector de informes
+  const contextText = document.querySelector("#report-context span");
+  if (contextText) {
+    contextText.innerHTML = `${contextLabel} · <strong>${contextDetail}</strong>`;
+  }
 }

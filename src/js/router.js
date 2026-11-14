@@ -2,6 +2,10 @@
  * Motor de enrutamiento de Inventy
  */
 
+import { updateNavIndicator } from './motion.js';
+
+const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 export const VIEWS = {
   dashboard: {
     title: "Dashboard",
@@ -50,7 +54,11 @@ export function setupRouter(onViewSwitch) {
       
       // Cierra la barra lateral al elegir una vista en móviles
       const sidebar = document.getElementById("app-sidebar");
+      const menuToggle = document.getElementById("mobile-menu-toggle");
       if (sidebar) sidebar.classList.remove("active");
+      document.getElementById("sidebar-scrim")?.classList.remove("active");
+      menuToggle?.setAttribute("aria-expanded", "false");
+      menuToggle?.setAttribute("aria-label", "Abrir menú");
     });
   });
   
@@ -85,10 +93,13 @@ export function switchView(viewName, onViewSwitch) {
   
   // Actualiza la clase activa en la barra lateral
   document.querySelectorAll(".nav-item").forEach(item => {
-    if (item.getAttribute("data-view") === viewName) {
-      item.classList.add("active");
+    const isActive = item.getAttribute("data-view") === viewName;
+    item.classList.toggle("active", isActive);
+    const link = item.querySelector("a");
+    if (isActive) {
+      link?.setAttribute("aria-current", "page");
     } else {
-      item.classList.remove("active");
+      link?.removeAttribute("aria-current");
     }
   });
   
@@ -106,7 +117,26 @@ export function switchView(viewName, onViewSwitch) {
   
   if (titleEl) titleEl.textContent = VIEWS[viewName].title;
   if (subtitleEl) subtitleEl.textContent = VIEWS[viewName].subtitle;
-  
+
+  // Reinicia la entrada del encabezado para que el cambio se sienta continuo
+  const titleSection = document.querySelector(".page-title-section");
+  if (titleSection) {
+    titleSection.classList.remove("is-switching");
+    void titleSection.offsetWidth;
+    titleSection.classList.add("is-switching");
+    window.setTimeout(() => titleSection.classList.remove("is-switching"), 560);
+  }
+
+  updateNavIndicator();
+
+  // Cada vista comienza desde arriba, sin saltos bruscos
+  if (window.scrollY > 0) {
+    window.scrollTo({
+      top: 0,
+      behavior: reduceMotionQuery.matches ? "auto" : "smooth"
+    });
+  }
+
   // Ejecuta el callback para renderizar el contenido de la vista específica
   if (typeof onViewSwitch === "function") {
     onViewSwitch(viewName);

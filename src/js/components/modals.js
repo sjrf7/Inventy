@@ -3,6 +3,7 @@
  */
 
 import { formatDate, getAssetFallbackImage } from '../utils.js';
+import { openModal, staggerChildren } from '../motion.js';
 
 /**
  * Abre y rellena la vista detallada de un bien.
@@ -180,7 +181,11 @@ export function openAssetDetailModal(id, assets, STATUSES, ASSET_SVGS) {
   
   // Abre la superposición del modal de detalles
   const detailModal = document.getElementById("modal-asset-detail");
-  if (detailModal) detailModal.classList.add("active");
+  if (detailModal) openModal(detailModal);
+
+  if (specsContainer) {
+    staggerChildren(specsContainer, ".spec-row", { step: 22, max: 8 });
+  }
   
   // Restablece la pestaña activa a la línea de tiempo
   document.querySelectorAll(".detail-tab-btn").forEach(btn => {
@@ -287,5 +292,5 @@ export function openAssetFormModal(editingId, assets, ASSET_SVGS, setUploadedIma
   }
   
   const formModal = document.getElementById("modal-asset-form");
-  if (formModal) formModal.classList.add("active");
+  if (formModal) openModal(formModal);
 }

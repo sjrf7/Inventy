@@ -151,11 +151,16 @@ export function initAuth(onLoginSuccess) {
             if (loginOverlay) {
               loginOverlay.style.display = "none";
             }
+
+            // Entrada coreografiada del panel principal
+            document.body.classList.add("app-entering");
+            window.setTimeout(() => document.body.classList.remove("app-entering"), 900);
+
             // Ejecuta el flujo principal de carga del sistema
             if (typeof onLoginSuccess === "function") {
               onLoginSuccess();
             }
-          }, 500); // Duración sincronizada con la animación de salida CSS
+          }, 420); // Duración sincronizada con la animación de salida CSS
         } else {
           throw new Error(data.error || "Error al iniciar sesión");
         }

@@ -1,4 +1,5 @@
-import { getAssetFallbackImage, escapeAttr } from '../utils.js';
+import { getAssetFallbackImage, escapeAttr, getStatusInfo } from '../utils.js';
+import { captureFlipRects, playFlip } from '../motion.js';
 
 /**
  * Filtra, ordena y renderiza las tarjetas de la cuadrícula del inventario.
@@ -11,6 +12,9 @@ export function renderInventoryList(assets, STATUSES, onDetailClick, onSupportCl
   const gridContainer = document.getElementById("assets-grid-container");
   const counterEl = document.getElementById("inventory-counter");
   if (!gridContainer) return;
+
+  // Captura la posición previa para animar la reordenación (FLIP)
+  const previousRects = captureFlipRects(gridContainer, ".asset-card");
 
   gridContainer.innerHTML = "";
   
@@ -54,23 +58,26 @@ export function renderInventoryList(assets, STATUSES, onDetailClick, onSupportCl
   
   if (filteredAssets.length === 0) {
     gridContainer.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 12px;">
+      <div class="inventory-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <h3>No se encontraron bienes</h3>
-        <p style="color: var(--text-muted); margin-top: 6px;">Prueba ajustando los filtros de búsqueda o dirección.</p>
+        <p>Prueba ajustando los filtros de búsqueda o dirección.</p>
       </div>
     `;
     return;
   }
   
   // Construye e inserta las tarjetas
-  filteredAssets.forEach(asset => {
+  const cards = [];
+
+  filteredAssets.forEach((asset, index) => {
     const card = document.createElement("div");
     card.className = "asset-card";
+    card.dataset.flipId = asset.id;
     
-    const statusInfo = STATUSES[asset.status] || { label: "Desconocido", color: "#6B7280", bg: "rgba(107, 114, 128, 0.1)" };
+    const statusInfo = getStatusInfo(asset.status, STATUSES);
     const fallbackClass = asset.photo ? "" : "fallback-img";
     
     card.innerHTML = `
@@ -86,13 +93,19 @@ export function renderInventoryList(assets, STATUSES, onDetailClick, onSupportCl
         <p class="asset-card-desc">${asset.description || "Sin descripción disponible."}</p>
         
         <div class="asset-card-meta">
-          <div class="asset-card-dept">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <div class="asset-card-dept" title="${escapeAttr(asset.department)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             <span>${asset.department}</span>
           </div>
           <div class="asset-card-actions">
-            <button class="btn btn-secondary btn-sm btn-view-detail" data-id="${asset.id}" title="Ver ficha completa">Ficha</button>
-            <button class="btn btn-primary btn-sm btn-quick-support" data-id="${asset.id}" title="Soporte">Soporte</button>
+            <button class="btn btn-primary btn-sm btn-view-detail" data-id="${asset.id}" title="Ver ficha completa">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Ficha
+            </button>
+            <button class="btn btn-secondary btn-sm btn-quick-support" data-id="${asset.id}" title="Abrir soporte técnico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              Soporte
+            </button>
           </div>
         </div>
       </div>
@@ -122,5 +135,15 @@ export function renderInventoryList(assets, STATUSES, onDetailClick, onSupportCl
     });
     
     gridContainer.appendChild(card);
+    cards.push(card);
+  });
+
+  // Las tarjetas que ya existían se deslizan a su nueva posición;
+  // las nuevas entran de forma escalonada.
+  playFlip(gridContainer, previousRects, ".asset-card");
+  cards.forEach((card, index) => {
+    if (previousRects.has(card.dataset.flipId)) return;
+    card.style.setProperty("--i", String(Math.min(index, 10)));
+    card.classList.add("stagger-item");
   });
 }

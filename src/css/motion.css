@@ -1,0 +1,1033 @@
+/* ========================================================
+   Inventy · Capa de movimiento e interacción
+   --------------------------------------------------------
+   Animaciones fluidas, estados de transición y microinteracciones.
+   Todo el movimiento se apoya en transform/opacity para mantenerse
+   en el compositor. Las entradas usan `backwards` para no dejar
+   contextos de apilamiento activos al terminar la animación.
+   ======================================================== */
+
+/* ------------------------------------------
+   Utilidades de revelado
+   ------------------------------------------ */
+@keyframes viewReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes itemIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes fadeOnly {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes previewIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes dotPop {
+  0% { transform: scale(0.35); opacity: 0; }
+  70% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Elementos marcados con retardo escalonado desde JavaScript */
+.stagger-item {
+  animation: itemIn var(--dur-slower) var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+
+/* ------------------------------------------
+   Cambio de vista
+   ------------------------------------------ */
+html.motion-ready .view-panel.active > * {
+  animation: viewReveal var(--dur-slower) var(--ease-out) backwards;
+}
+
+html.motion-ready .view-panel.active > *:nth-child(2) { animation-delay: 45ms; }
+html.motion-ready .view-panel.active > *:nth-child(3) { animation-delay: 90ms; }
+html.motion-ready .view-panel.active > *:nth-child(4) { animation-delay: 135ms; }
+html.motion-ready .view-panel.active > *:nth-child(5) { animation-delay: 180ms; }
+html.motion-ready .view-panel.active > *:nth-child(n + 6) { animation-delay: 220ms; }
+
+/* El título de la vista acompaña al cambio de contexto */
+html.motion-ready .page-title-section.is-switching .page-title,
+html.motion-ready .page-title-section.is-switching .page-subtitle {
+  animation: titleIn var(--dur-slow) var(--ease-out) backwards;
+}
+
+@keyframes titleIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 5px, 0);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+/* ------------------------------------------
+   Barra lateral · indicador deslizante
+   ------------------------------------------ */
+.nav-links {
+  position: relative;
+}
+
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--dur-slow) var(--ease-spring),
+    height var(--dur-base) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.nav-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  margin-top: -8px;
+  border-radius: 2px;
+  background: var(--primary);
+  opacity: 0.85;
+}
+
+.nav-item {
+  position: relative;
+  z-index: 1;
+}
+
+/* El fondo activo lo dibuja el indicador, no el enlace */
+.nav-item a,
+.nav-item.active a {
+  background-color: transparent;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.nav-item a:hover {
+  background-color: transparent;
+  transform: translate3d(2px, 0, 0);
+}
+
+.nav-item:not(.active) a:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.nav-item a:active {
+  transform: translate3d(1px, 0, 0) scale(0.99);
+}
+
+.nav-item.active a:hover {
+  transform: none;
+}
+
+html.motion-ready .nav-item a svg {
+  transition: transform var(--dur-base) var(--ease-spring), color var(--dur-fast) var(--ease-out);
+}
+
+html.motion-ready .nav-item a:hover svg {
+  transform: scale(1.08);
+}
+
+.nav-item.active a svg {
+  animation: navIconPop var(--dur-slow) var(--ease-spring) backwards;
+}
+
+@keyframes navIconPop {
+  from { transform: scale(0.75); }
+  to { transform: scale(1); }
+}
+
+/* Marca de la aplicación: respuesta sutil al hover */
+.brand-logo {
+  transition: transform var(--dur-slow) var(--ease-spring), box-shadow var(--dur-base) var(--ease-out);
+}
+
+.brand-section:hover .brand-logo {
+  transform: translate3d(0, -1px, 0) rotate(-3deg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 20px var(--primary-glow);
+}
+
+/* ------------------------------------------
+   Botones y controles
+   ------------------------------------------ */
+.btn {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: var(--dur-instant);
+}
+
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24), 0 0 0 0 var(--primary-glow);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22), 0 8px 22px -8px var(--primary-glow);
+}
+
+.btn-primary:focus-visible {
+  box-shadow: var(--ring);
+}
+
+/* Destello contenido al pasar el cursor */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.16) 48%, transparent 66%);
+  transform: translate3d(-120%, 0, 0);
+  pointer-events: none;
+}
+
+.btn-primary:hover::after {
+  animation: btnSheen 0.9s var(--ease-out);
+}
+
+@keyframes btnSheen {
+  to { transform: translate3d(120%, 0, 0); }
+}
+
+.btn-ghost:hover,
+.btn-secondary:hover {
+  transform: translate3d(0, -1px, 0);
+}
+
+.btn-ghost:active:not(:disabled),
+.btn-secondary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-sm:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Botones de icono: respuesta en el mismo frame del pointerdown */
+.theme-toggle-btn,
+.modal-close-btn,
+.mobile-menu-btn,
+.password-toggle,
+.btn-logout {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
+.theme-toggle-btn:active,
+.modal-close-btn:active,
+.mobile-menu-btn:active,
+.password-toggle:active {
+  transform: scale(0.92);
+}
+
+.theme-toggle-btn:hover svg {
+  animation: iconWiggle 0.5s var(--ease-spring);
+}
+
+@keyframes iconWiggle {
+  0% { transform: rotate(0); }
+  45% { transform: rotate(-10deg); }
+  100% { transform: rotate(0); }
+}
+
+/* Campos: foco estable y transiciones suaves */
+.form-input,
+.form-select,
+.form-textarea,
+.search-input,
+.filter-select {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus,
+.search-input:focus {
+  box-shadow: var(--ring);
+}
+
+/* La búsqueda global gana presencia al enfocarse */
+.search-wrapper {
+  transition: width var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+
+@media (min-width: 1101px) {
+  .search-wrapper:focus-within {
+    width: 320px;
+  }
+}
+
+.search-wrapper svg {
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+
+.search-wrapper:focus-within svg {
+  color: var(--primary);
+  transform: translateY(-50%) scale(1.06);
+}
+
+/* ------------------------------------------
+   Tarjetas · elevación
+   ------------------------------------------ */
+.dashboard-card,
+.report-option-card,
+.issue-card {
+  position: relative;
+}
+
+/* El gráfico de dona se dibuja al aparecer */
+.donut-segment {
+  transition:
+    stroke-dasharray 0.9s var(--ease-out),
+    stroke-width var(--dur-fast) var(--ease-out);
+}
+
+.donut-segment:hover {
+  stroke-width: 6.4;
+}
+
+.stat-card {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    transform var(--dur-slow) var(--ease-spring-soft),
+    box-shadow var(--dur-slow) var(--ease-out);
+}
+
+.stat-card:hover {
+  transform: translate3d(0, -3px, 0);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card:hover .stat-icon-wrapper {
+  transform: scale(1.06) rotate(-3deg);
+}
+
+.stat-icon-wrapper {
+  transition: transform var(--dur-slow) var(--ease-spring), background-color var(--dur-base) var(--ease-out);
+}
+
+.asset-card {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-spring-soft);
+}
+
+.asset-card:hover {
+  transform: translate3d(0, -4px, 0);
+  box-shadow: var(--shadow-md);
+}
+
+.asset-card:active {
+  transform: translate3d(0, -1px, 0) scale(0.995);
+  transition-duration: var(--dur-instant);
+}
+
+.asset-card-image img {
+  transition: transform var(--dur-slower) var(--ease-out);
+  will-change: auto;
+}
+
+.asset-card:hover .asset-card-image img {
+  transform: scale(1.045);
+}
+
+.asset-card:hover .asset-badge {
+  transform: translate3d(0, -1px, 0);
+}
+
+.asset-badge {
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+/* Punto de estado: el color del propio distintivo comunica sin ruido */
+.asset-badge[class*="status-"]::before,
+.searchable-select-status-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  margin-right: 5px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.asset-badge[class*="status-"],
+.searchable-select-status-badge {
+  display: inline-flex;
+  align-items: center;
+}
+
+.report-option-card {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    transform var(--dur-slow) var(--ease-spring-soft),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.report-option-card:hover {
+  transform: translate3d(0, -2px, 0);
+  box-shadow: var(--shadow-md);
+}
+
+.report-option-card:active {
+  transform: scale(0.99);
+}
+
+.report-option-card.active .report-card-icon {
+  animation: iconPop var(--dur-slow) var(--ease-spring) backwards;
+}
+
+@keyframes iconPop {
+  from { transform: scale(0.82); opacity: 0.6; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.issue-card {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring-soft);
+}
+
+.issue-card:hover {
+  transform: translate3d(0, -2px, 0);
+}
+
+/* ------------------------------------------
+   Listas animadas (dashboard, soporte, historial)
+   ------------------------------------------ */
+html.motion-ready .activity-item,
+html.motion-ready .timeline-item,
+html.motion-ready .issue-card,
+html.motion-ready .type-card,
+html.motion-ready .legend-item,
+html.motion-ready .bar-row {
+  animation: itemIn var(--dur-slower) var(--ease-out) backwards;
+}
+
+html.motion-ready .activity-item:nth-child(2),
+html.motion-ready .timeline-item:nth-child(2),
+html.motion-ready .issue-card:nth-child(2),
+html.motion-ready .type-card:nth-child(2),
+html.motion-ready .legend-item:nth-child(2),
+html.motion-ready .bar-row:nth-child(2) { animation-delay: 40ms; }
+
+html.motion-ready .activity-item:nth-child(3),
+html.motion-ready .timeline-item:nth-child(3),
+html.motion-ready .issue-card:nth-child(3),
+html.motion-ready .type-card:nth-child(3),
+html.motion-ready .legend-item:nth-child(3),
+html.motion-ready .bar-row:nth-child(3) { animation-delay: 80ms; }
+
+html.motion-ready .activity-item:nth-child(4),
+html.motion-ready .timeline-item:nth-child(4),
+html.motion-ready .issue-card:nth-child(4),
+html.motion-ready .type-card:nth-child(4),
+html.motion-ready .legend-item:nth-child(4),
+html.motion-ready .bar-row:nth-child(4) { animation-delay: 120ms; }
+
+html.motion-ready .activity-item:nth-child(n + 5),
+html.motion-ready .timeline-item:nth-child(n + 5),
+html.motion-ready .issue-card:nth-child(n + 5),
+html.motion-ready .type-card:nth-child(n + 5),
+html.motion-ready .legend-item:nth-child(n + 5),
+html.motion-ready .bar-row:nth-child(n + 5) { animation-delay: 160ms; }
+
+html.motion-ready .timeline-dot {
+  animation: dotPop var(--dur-slow) var(--ease-spring) backwards;
+}
+
+.timeline-item {
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.timeline-item:hover .timeline-content {
+  border-color: var(--border-strong);
+  background-color: var(--bg-glass-card);
+}
+
+.timeline-content {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+.timeline-item:first-child .timeline-dot {
+  box-shadow: 0 0 0 3px var(--bg-secondary), 0 0 0 6px var(--primary-glow);
+}
+
+/* Barra de progreso del dashboard */
+.bar-fill {
+  transition: width 0.9s var(--ease-out);
+}
+
+.bar-row:hover .bar-fill {
+  filter: brightness(1.12);
+}
+
+/* Estados vacíos */
+.inventory-empty,
+.support-empty,
+.bar-chart-empty {
+  animation: fadeOnly var(--dur-slow) var(--ease-out) backwards;
+}
+
+/* Vistas previas en formularios */
+.preview-in {
+  animation: previewIn var(--dur-slow) var(--ease-out) backwards;
+}
+
+.asset-select-card {
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+
+.asset-select-card:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-secondary);
+}
+
+.asset-select-card img {
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.asset-select-card:hover img {
+  transform: scale(1.05);
+}
+
+/* Imagen subida: aparece con material, no de golpe */
+.image-upload-preview[style*="display: block"] {
+  animation: previewIn var(--dur-slow) var(--ease-out) backwards;
+}
+
+.image-upload-wrapper {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.image-upload-wrapper:active {
+  transform: scale(0.995);
+}
+
+.image-upload-wrapper:hover svg {
+  animation: uploadNudge 0.6s var(--ease-spring);
+}
+
+@keyframes uploadNudge {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+
+/* ------------------------------------------
+   Modales · materialización y salida reversible
+   ------------------------------------------ */
+.modal-overlay {
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background-color: rgba(4, 6, 11, 0);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  animation: none;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    backdrop-filter var(--dur-base) var(--ease-out),
+    -webkit-backdrop-filter var(--dur-base) var(--ease-out),
+    visibility 0s linear var(--dur-base);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  background-color: rgba(4, 6, 11, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    backdrop-filter var(--dur-base) var(--ease-out),
+    -webkit-backdrop-filter var(--dur-base) var(--ease-out),
+    visibility 0s;
+}
+
+[data-theme="light"] .modal-overlay {
+  background-color: rgba(15, 23, 42, 0);
+}
+
+[data-theme="light"] .modal-overlay.active {
+  background-color: rgba(15, 23, 42, 0.4);
+}
+
+.modal-container {
+  animation: none;
+  opacity: 0;
+  filter: blur(4px);
+  transform: translate3d(0, 18px, 0) scale(0.965);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    filter var(--dur-base) var(--ease-out),
+    transform var(--dur-slow) var(--ease-spring);
+  transform-origin: center center;
+  outline: none;
+}
+
+.modal-overlay.active .modal-container {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0) scale(1);
+  transition-delay: 40ms;
+}
+
+.modal-container:focus {
+  outline: none;
+}
+
+.modal-close-btn svg {
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.modal-close-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+/* ------------------------------------------
+   Pestañas del detalle · subrayado viajero
+   ------------------------------------------ */
+.detail-tabs {
+  position: relative;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  width: 0;
+  border-radius: 2px;
+  background-color: var(--primary);
+  box-shadow: 0 0 8px var(--primary-glow);
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    width var(--dur-slow) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.detail-tab-btn {
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.detail-tab-btn.active::after {
+  display: none;
+}
+
+.detail-tab-btn.active {
+  animation: tabLabelIn var(--dur-base) var(--ease-out) backwards;
+}
+
+@keyframes tabLabelIn {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.tab-pane.active {
+  animation: tabPaneIn var(--dur-slow) var(--ease-out) backwards;
+}
+
+@keyframes tabPaneIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 7px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ------------------------------------------
+   Combobox con búsqueda
+   ------------------------------------------ */
+.searchable-select-dropdown {
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, -6px, 0) scale(0.985);
+  transform-origin: top center;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring),
+    visibility 0s linear var(--dur-base);
+}
+
+.searchable-select-container.open {
+  z-index: 80;
+}
+
+.searchable-select-container.open .searchable-select-dropdown {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring),
+    visibility 0s;
+}
+
+.searchable-select-container.open .searchable-select-input {
+  border-color: var(--primary);
+  box-shadow: var(--ring);
+}
+
+.searchable-select-item {
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.searchable-select-item:active {
+  transform: scale(0.995);
+}
+
+/* ------------------------------------------
+   Inventario · FLIP al filtrar u ordenar
+   ------------------------------------------ */
+.asset-card.flip-moving {
+  animation: none !important;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ------------------------------------------
+   Reportes
+   ------------------------------------------ */
+.report-preview-panel.report-enter > * {
+  animation: viewReveal var(--dur-slow) var(--ease-out) backwards;
+}
+
+.report-preview-panel.report-enter > *:nth-child(2) { animation-delay: 30ms; }
+.report-preview-panel.report-enter > *:nth-child(3) { animation-delay: 60ms; }
+.report-preview-panel.report-enter > *:nth-child(4) { animation-delay: 90ms; }
+.report-preview-panel.report-enter > *:nth-child(5) { animation-delay: 120ms; }
+.report-preview-panel.report-enter > *:nth-child(n + 6) { animation-delay: 150ms; }
+
+.report-table tbody tr {
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.report-summary-box {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring-soft),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.report-summary-box:hover {
+  transform: translate3d(0, -1px, 0);
+  box-shadow: var(--shadow-sm);
+}
+
+.reports-context span {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+/* ------------------------------------------
+   Inicio de sesión
+   ------------------------------------------ */
+html.motion-ready .login-card-header > * {
+  animation: viewReveal var(--dur-slower) var(--ease-out) backwards;
+}
+
+html.motion-ready .login-card-header > *:nth-child(2) { animation-delay: 50ms; }
+html.motion-ready .login-card-header > *:nth-child(3) { animation-delay: 90ms; }
+
+html.motion-ready .login-form > * {
+  animation: itemIn var(--dur-slower) var(--ease-out) backwards;
+}
+
+html.motion-ready .login-form > *:nth-child(1) { animation-delay: 130ms; }
+html.motion-ready .login-form > *:nth-child(2) { animation-delay: 170ms; }
+html.motion-ready .login-form > *:nth-child(3) { animation-delay: 210ms; }
+html.motion-ready .login-form > *:nth-child(4) { animation-delay: 245ms; }
+html.motion-ready .login-form > *:nth-child(5) { animation-delay: 280ms; }
+html.motion-ready .login-form > *:nth-child(n + 6) { animation-delay: 310ms; }
+
+.login-overlay.exit-active {
+  animation: none;
+  opacity: 0;
+  filter: blur(6px);
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    filter var(--dur-slow) var(--ease-out);
+  pointer-events: none;
+}
+
+.login-overlay.exit-active .login-card {
+  animation: none;
+  opacity: 0;
+  transform: translate3d(0, -10px, 0) scale(0.975);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+
+.login-overlay {
+  transition: opacity var(--dur-slow) var(--ease-out), filter var(--dur-slow) var(--ease-out);
+}
+
+.login-card {
+  transition:
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring-soft);
+}
+
+.login-input-group label {
+  transition:
+    top var(--dur-base) var(--ease-out),
+    left var(--dur-base) var(--ease-out),
+    font-size var(--dur-base) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+.checkbox-custom::after {
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.login-error {
+  animation: shakeError 0.4s var(--ease-out);
+}
+
+.login-spinner {
+  animation: spin 0.7s linear infinite;
+}
+
+/* Entrada del panel tras iniciar sesión */
+body.app-entering .main-content {
+  animation: appReveal var(--dur-slower) var(--ease-out) backwards;
+}
+
+body.app-entering .sidebar {
+  animation: sidebarReveal var(--dur-slower) var(--ease-out) backwards;
+}
+
+@keyframes appReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sidebarReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(-14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ------------------------------------------
+   Barra lateral móvil
+   ------------------------------------------ */
+@media (max-width: 768px) {
+  .sidebar {
+    transition:
+      transform var(--dur-slower) var(--ease-spring),
+      background-color var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar-scrim {
+    transition: opacity var(--dur-base) var(--ease-out);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+}
+
+/* ------------------------------------------
+   Alertas SweetAlert2
+   ------------------------------------------ */
+.swal-show-animation {
+  animation: swalScaleIn var(--dur-slow) var(--ease-spring) forwards !important;
+}
+
+.swal-hide-animation {
+  animation: swalScaleOut var(--dur-base) var(--ease-out) forwards !important;
+}
+
+.swal2-icon {
+  animation: swalIconIn var(--dur-slower) var(--ease-spring) backwards;
+}
+
+@keyframes swalIconIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ------------------------------------------
+   Transición de tema con recorte circular
+   ------------------------------------------ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ------------------------------------------
+   Accesibilidad
+   ------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  html.motion-ready .view-panel.active > *,
+  html.motion-ready .activity-item,
+  html.motion-ready .timeline-item,
+  html.motion-ready .timeline-dot,
+  html.motion-ready .issue-card,
+  html.motion-ready .type-card,
+  html.motion-ready .legend-item,
+  html.motion-ready .bar-row,
+  .stagger-item,
+  .preview-in,
+  .tab-pane.active,
+  .report-preview-panel.report-enter > *,
+  html.motion-ready .login-card-header > *,
+  html.motion-ready .login-form > *,
+  body.app-entering .main-content,
+  body.app-entering .sidebar {
+    animation: fadeOnly var(--dur-fast) ease both !important;
+    transform: none !important;
+  }
+
+  .modal-container {
+    transform: none;
+    filter: none;
+  }
+
+  .tab-indicator {
+    transition: opacity var(--dur-fast) ease;
+  }
+
+  .nav-indicator {
+    transition: opacity var(--dur-fast) ease;
+  }
+
+  .stat-card:hover,
+  .asset-card:hover,
+  .report-option-card:hover,
+  .issue-card:hover,
+  .btn-primary:hover::after {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .modal-overlay.active {
+    background-color: rgba(4, 6, 11, 0.92);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  [data-theme="light"] .modal-overlay.active {
+    background-color: rgba(15, 23, 42, 0.72);
+  }
+
+  .asset-badge {
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .nav-item.active a {
+    background-color: var(--primary-soft);
+    outline: 1px solid var(--primary);
+  }
+
+  .asset-card,
+  .stat-card,
+  .dashboard-card,
+  .modal-container {
+    border-color: var(--border-strong);
+  }
+}

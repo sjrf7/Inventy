@@ -7,12 +7,21 @@ import { setupTransfersView, renderTransfersTimeline } from './views/transfers.j
 import { setupSupportView, renderPendingSupportList } from './views/support.js';
 import { generateReport } from './views/reports.js';
 import { openAssetDetailModal, openAssetFormModal } from './components/modals.js';
-import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr } from './utils.js';
-import { initAuth } from './auth.js?v=1.0.2';
+import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr, getDepartmentOptions } from './utils.js';
+import { initMotion, closeModal, closeAllModals, revealPreview, runThemeTransition } from './motion.js';
+import { initAuth } from './auth.js?v=1.1.0';
 
 let uploadedImageBase64 = null;
 let activeDetailAssetId = null;
 let appInitialized = false;
+
+/**
+ * Direcciones institucionales combinadas con las que existen en el inventario.
+ * @returns {Array<string>}
+ */
+function getDepartments() {
+  return getDepartmentOptions(getAssets(), DEPARTMENTS);
+}
 
 /**
  * Muestra alertas modernas SweetAlert2 personalizadas.
@@ -52,6 +61,9 @@ document.addEventListener("DOMContentLoaded", () => {
  * Inicializa la aplicación y arranca todo el sistema.
  */
 function initApp() {
+  // Activa la capa de movimiento (indicadores, foco suave, transiciones)
+  initMotion();
+
   // Inicialización del tema visual
   const savedTheme = localStorage.getItem("inventy_theme") || "dark";
   document.documentElement.setAttribute("data-theme", savedTheme);
@@ -96,7 +108,7 @@ function renderView(viewName) {
   } else if (viewName === "inventory") {
     renderInventoryList(assets, STATUSES, onDetailClick, onSupportClick);
   } else if (viewName === "transfers") {
-    setupTransfersView(assets, DEPARTMENTS);
+    setupTransfersView(assets, getDepartments());
   } else if (viewName === "support") {
     setupSupportView(assets, STATUSES);
     const userStr = localStorage.getItem("inventy_user") || sessionStorage.getItem("inventy_user");
@@ -139,7 +151,7 @@ function populateFilterSelects() {
     formDept.innerHTML = '<option value="">Seleccione Dirección...</option>';
     reportDept.innerHTML = '';
     
-    DEPARTMENTS.forEach(dept => {
+    getDepartments().forEach(dept => {
       const opt1 = document.createElement("option");
       opt1.value = dept;
       opt1.textContent = dept;
@@ -210,9 +222,31 @@ function setupEventListeners() {
   const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
   if (mobileMenuToggle) {
     mobileMenuToggle.addEventListener("click", () => {
-      document.getElementById("app-sidebar")?.classList.toggle("active");
+      const sidebar = document.getElementById("app-sidebar");
+      const scrim = document.getElementById("sidebar-scrim");
+      const isOpen = sidebar?.classList.toggle("active");
+      scrim?.classList.toggle("active", Boolean(isOpen));
+      mobileMenuToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      mobileMenuToggle.setAttribute("aria-label", isOpen ? "Cerrar menú" : "Abrir menú");
     });
   }
+
+  // Cierra la barra lateral y los modales con la tecla Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+
+    const sidebar = document.getElementById("app-sidebar");
+    const menuToggle = document.getElementById("mobile-menu-toggle");
+    if (sidebar?.classList.contains("active")) {
+      sidebar.classList.remove("active");
+      document.getElementById("sidebar-scrim")?.classList.remove("active");
+      menuToggle?.setAttribute("aria-expanded", "false");
+      menuToggle?.setAttribute("aria-label", "Abrir menú");
+    }
+
+    closeAllModals();
+    activeDetailAssetId = null;
+  });
   
   // Cierra la barra lateral al hacer clic fuera de ella en móviles
   document.addEventListener("click", (e) => {
@@ -222,21 +256,26 @@ function setupEventListeners() {
     if (sidebar && toggleBtn && window.innerWidth <= 768) {
       if (sidebar.classList.contains("active") && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
         sidebar.classList.remove("active");
+        document.getElementById("sidebar-scrim")?.classList.remove("active");
+        toggleBtn.setAttribute("aria-expanded", "false");
+        toggleBtn.setAttribute("aria-label", "Abrir menú");
       }
     }
   });
 
-  // Cambio de tema claro/oscuro
+  // Cambio de tema claro/oscuro con transición de material
   const themeToggle = document.getElementById("theme-toggle");
   if (themeToggle) {
     themeToggle.addEventListener("click", () => {
       const currentTheme = document.documentElement.getAttribute("data-theme");
       const newTheme = currentTheme === "dark" ? "light" : "dark";
-      
-      document.documentElement.setAttribute("data-theme", newTheme);
-      localStorage.setItem("inventy_theme", newTheme);
-      updateThemeIcon(newTheme);
-      renderAll(); // Redibuja el gráfico de dona aplicando las variables de tema
+
+      runThemeTransition(() => {
+        document.documentElement.setAttribute("data-theme", newTheme);
+        localStorage.setItem("inventy_theme", newTheme);
+        updateThemeIcon(newTheme);
+        renderAll(); // Redibuja el gráfico de dona aplicando las variables de tema
+      }, themeToggle);
     });
   }
 
@@ -290,7 +329,7 @@ function setupEventListeners() {
   const btnEditAsset = document.getElementById("btn-edit-asset");
 
   const closeDetailModal = () => {
-    document.getElementById("modal-asset-detail")?.classList.remove("active");
+    closeModal(document.getElementById("modal-asset-detail"));
     activeDetailAssetId = null;
   };
 
@@ -333,7 +372,7 @@ function setupEventListeners() {
   const btnCloseForm = document.getElementById("btn-close-form");
   const btnCancelForm = document.getElementById("btn-cancel-form");
   const closeFormModal = () => {
-    document.getElementById("modal-asset-form")?.classList.remove("active");
+    closeModal(document.getElementById("modal-asset-form"));
   };
 
   if (btnCloseForm) btnCloseForm.addEventListener("click", closeFormModal);
@@ -410,6 +449,7 @@ function setupEventListeners() {
           </div>
         `;
         previewDiv.style.display = "block";
+        revealPreview(previewDiv);
       }
     });
   }
@@ -451,6 +491,7 @@ function setupEventListeners() {
           </div>
         `;
         previewDiv.style.display = "block";
+        revealPreview(previewDiv);
         
         const nextStatus = document.getElementById("support-status-after");
         if (nextStatus) nextStatus.value = "activo";
@@ -533,6 +574,7 @@ function processUploadedImage(file) {
     if (preview) {
       preview.src = base64;
       preview.style.display = "block";
+      revealPreview(preview);
     }
     if (svgEl) svgEl.style.display = "none";
     if (textEl) textEl.style.display = "none";
@@ -656,7 +698,8 @@ function handleAssetFormSubmit() {
   }
   
   savePromise.then(() => {
-    document.getElementById("modal-asset-form")?.classList.remove("active");
+    closeModal(document.getElementById("modal-asset-form"));
+    populateFilterSelects();
     renderAll();
   }).catch(err => {
     showAppAlert("Error", "No se pudo guardar la información del bien: " + err.message, "error");
@@ -702,7 +745,7 @@ function handleTransferSubmit() {
     const form = document.getElementById("transfer-form");
     if (form) form.reset();
     
-    setupTransfersView(getAssets(), DEPARTMENTS);
+    setupTransfersView(getAssets(), getDepartments());
     
     showAppAlert("Transferencia Exitosa", `El equipo ${asset.nroBien} fue transferido con éxito a la dirección ${destDept}.`, "success");
     switchView("inventory", (view) => {

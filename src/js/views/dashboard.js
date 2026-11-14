@@ -1,5 +1,6 @@
 import { renderDonutChart, renderDepartmentChart, renderTypeDistribution } from '../charts.js';
-import { formatDate } from '../utils.js';
+import { formatDate, isInSupport } from '../utils.js';
+import { animateCount } from '../motion.js';
 
 /**
  * Renderiza los contadores estadísticos del panel principal.
@@ -8,7 +9,7 @@ import { formatDate } from '../utils.js';
 export function updateStatsCounters(assets) {
   const total = assets.length;
   const active = assets.filter(a => a.status === "activo").length;
-  const maintenance = assets.filter(a => a.status === "reparacion").length;
+  const maintenance = assets.filter(a => isInSupport(a.status)).length;
   const deincorporated = assets.filter(a => a.status === "desincorporado").length;
   
   const elTotal = document.getElementById("stat-total");
@@ -16,10 +17,10 @@ export function updateStatsCounters(assets) {
   const elMaint = document.getElementById("stat-maintenance");
   const elDeincorporated = document.getElementById("stat-deincorporated");
 
-  if (elTotal) elTotal.textContent = total;
-  if (elActive) elActive.textContent = active;
-  if (elMaint) elMaint.textContent = maintenance;
-  if (elDeincorporated) elDeincorporated.textContent = deincorporated;
+  if (elTotal) animateCount(elTotal, total);
+  if (elActive) animateCount(elActive, active);
+  if (elMaint) animateCount(elMaint, maintenance);
+  if (elDeincorporated) animateCount(elDeincorporated, deincorporated);
 }
 
 /**
@@ -67,13 +68,17 @@ export function renderRecentActivity(assets) {
     
     let icon = "";
     if (activity.type === "registro") {
-      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>`;
+      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`;
     } else if (activity.type === "traspaso") {
-      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
+      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
     } else if (activity.type === "mantenimiento") {
-      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
+      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
+    } else if (activity.type === "cambio_estado") {
+      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
+    } else if (activity.type === "desincorporacion") {
+      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
     } else {
-      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
     }
     
     item.innerHTML = `
