@@ -121,3 +121,39 @@ input, textarea {
     scroll-behavior: auto !important;
   }
 }
+
+/* Objetivos táctiles cómodos en pantallas con puntero grueso */
+@media (pointer: coarse) {
+  .btn,
+  .btn-sm,
+  .theme-toggle-btn,
+  .mobile-menu-btn,
+  .btn-logout,
+  .modal-close-btn,
+  .detail-tab-btn,
+  .nav-item a,
+  .filter-select,
+  .search-input,
+  .form-input,
+  .form-select,
+  .form-textarea,
+  .searchable-select-input,
+  .searchable-select-item,
+  .remember-me,
+  .swal-btn-confirm,
+  .swal-btn-cancel {
+    min-height: 44px;
+  }
+
+  .theme-toggle-btn,
+  .mobile-menu-btn,
+  .btn-logout,
+  .modal-close-btn {
+    min-width: 44px;
+  }
+
+  .remember-me {
+    display: inline-flex;
+    align-items: center;
+  }
+}
