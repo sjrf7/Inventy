@@ -6,6 +6,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   background:
     radial-gradient(900px 620px at 50% -10%, rgba(59, 130, 246, 0.14), transparent 65%),
     radial-gradient(700px 520px at 100% 100%, rgba(139, 92, 246, 0.06), transparent 60%),
@@ -421,7 +422,6 @@
   font-weight: 600 !important;
   color: white !important;
   transition: background-color 0.2s !important;
-  outline: none !important;
   margin: 0 6px !important;
 }
 
@@ -439,13 +439,18 @@
   font-weight: 600 !important;
   color: var(--text-secondary) !important;
   transition: background-color 0.2s, color 0.2s !important;
-  outline: none !important;
   margin: 0 6px !important;
 }
 
 .swal-btn-cancel:hover {
   background: var(--bg-tertiary) !important;
   color: var(--text-primary) !important;
+}
+
+.swal-btn-confirm:focus-visible,
+.swal-btn-cancel:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
 }
 
 .swal-icon-custom {

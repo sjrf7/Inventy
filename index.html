@@ -23,8 +23,9 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 </head>
 <body class="auth-active">
+
   <!-- Pantalla de Login -->
-  <div class="login-overlay" id="login-screen">
+  <div class="login-overlay" id="login-screen" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="login-card">
       <div class="login-card-header">
         <div class="login-logo">
@@ -32,13 +33,13 @@
             <path d="M21 16.5v-9L12 3 3 7.5v9l9 4.5 9-4.5ZM12 21V12M12 12l9-4.5M12 12L3 7.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h2 class="login-title">Inventy</h2>
+        <h1 class="login-title" id="login-title">Inventy</h1>
         <p class="login-subtitle">Control de Bienes</p>
       </div>
 
       <form id="login-form" class="login-form">
         <div class="login-input-group">
-          <input type="text" id="login-username" required placeholder=" " autocomplete="username" autofocus>
+          <input type="text" id="login-username" name="username" required placeholder=" " autocomplete="username" spellcheck="false" autofocus>
           <label for="login-username">Usuario</label>
           <span class="input-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -48,7 +49,7 @@
         </div>
 
         <div class="login-input-group" style="margin-top: 4px;">
-          <input type="password" id="login-password" required placeholder=" " autocomplete="current-password">
+          <input type="password" id="login-password" name="password" required placeholder=" " autocomplete="current-password">
           <label for="login-password">Contraseña</label>
           <span class="input-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -68,7 +69,7 @@
 
         <div class="login-options">
           <label class="remember-me">
-            <input type="checkbox" id="login-remember">
+            <input type="checkbox" id="login-remember" name="recordarme">
             <span class="checkbox-custom"></span>
             <span>Recordarme</span>
           </label>
@@ -86,7 +87,8 @@
     </div>
   </div>
 
-  <div class="app-container">
+  <div class="app-container" inert>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
     
     <!-- Fondo oscurecido al abrir la navegación en móviles -->
     <div class="sidebar-scrim" id="sidebar-scrim" aria-hidden="true"></div>
@@ -169,7 +171,7 @@
             <span class="user-name">Samuel</span>
             <span class="user-role">Soporte TI</span>
           </div>
-          <button class="btn-logout" id="btn-logout" aria-label="Cerrar Sesión" style="background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; margin-left: auto; transition: color var(--transition-fast);">
+          <button type="button" class="btn-logout" id="btn-logout" aria-label="Cerrar Sesión" style="background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; margin-left: auto; transition: color var(--transition-fast);">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
@@ -179,13 +181,13 @@
     </aside>
     
     <!-- Área de contenido principal -->
-    <main class="main-content">
+    <main class="main-content" id="main-content" tabindex="-1">
       
       <!-- Encabezado superior -->
       <header class="top-header">
         <div class="page-title-section">
           <!-- Botón de menú para móviles -->
-          <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Abrir menú" aria-controls="app-sidebar" aria-expanded="false">
+          <button type="button" class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Abrir menú" aria-controls="app-sidebar" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;">
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="6" x2="21" y2="6" />
@@ -202,10 +204,10 @@
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" class="search-input" id="global-search" aria-label="Buscar bienes" placeholder="Buscar por NRO de bien o nombre...">
+            <input type="search" class="search-input" id="global-search" name="buscar" aria-label="Buscar bienes" placeholder="Buscar por NRO de bien o nombre…">
           </div>
           
-          <button class="theme-toggle-btn" id="theme-toggle" title="Cambiar Tema" aria-label="Cambiar tema de color">
+          <button type="button" class="theme-toggle-btn" id="theme-toggle" title="Cambiar tema" aria-label="Cambiar tema de color" aria-pressed="false">
             <!-- Icono de sol -->
             <svg id="theme-icon-sun" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="5" />
@@ -224,7 +226,7 @@
             </svg>
           </button>
           
-          <button class="btn btn-primary" id="btn-quick-add">
+          <button type="button" class="btn btn-primary" id="btn-quick-add">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
@@ -346,15 +348,15 @@
       <section id="view-inventory" class="view-panel">
         <div class="filters-bar">
           <div class="filters-group">
-            <select class="filter-select" id="filter-dept">
+            <select class="filter-select" id="filter-dept" name="filtro-direccion" aria-label="Filtrar por dirección">
               <option value="">Todas las Direcciones</option>
               <!-- Opciones de direcciones cargadas con JavaScript -->
             </select>
-            <select class="filter-select" id="filter-status">
+            <select class="filter-select" id="filter-status" name="filtro-estado" aria-label="Filtrar por estado">
               <option value="">Todos los Estados</option>
               <!-- Opciones de estados cargadas con JavaScript -->
             </select>
-            <select class="filter-select" id="sort-by">
+            <select class="filter-select" id="sort-by" name="orden" aria-label="Ordenar bienes">
               <option value="name-asc">Nombre (A-Z)</option>
               <option value="name-desc">Nombre (Z-A)</option>
               <option value="bien-asc">NRO de Bien (Menor a Mayor)</option>
@@ -363,7 +365,7 @@
           </div>
           
           <div class="filters-group">
-            <span class="page-subtitle" id="inventory-counter" style="margin:0; font-weight:600;">Mostrando 0 bienes</span>
+            <span class="page-subtitle" id="inventory-counter" role="status" aria-live="polite" style="margin:0; font-weight:600;">Mostrando 0 bienes</span>
           </div>
         </div>
         
@@ -385,8 +387,8 @@
             <form id="transfer-form" class="form-grid">
               <div class="form-group full-width">
                 <label class="form-label" for="transfer-asset-id">Seleccionar Equipo/Bien a Traspasar *</label>
-                <select class="form-select" id="transfer-asset-id" required>
-                  <option value="">Seleccione un equipo...</option>
+                <select class="form-select" id="transfer-asset-id" name="bien" required>
+                  <option value="">Seleccione un equipo…</option>
                   <!-- Opciones de bienes cargadas con JavaScript -->
                 </select>
                 <div id="transfer-asset-preview" style="display:none; margin-top:10px;">
@@ -395,31 +397,31 @@
               </div>
               
               <div class="form-group">
-                <label class="form-label">Dirección / Ubicación Actual</label>
-                <input type="text" class="form-input" id="transfer-origin-dept" readonly style="opacity:0.7;" placeholder="Seleccione un equipo primero">
+                <label class="form-label" for="transfer-origin-dept">Dirección / Ubicación Actual</label>
+                <input type="text" class="form-input" id="transfer-origin-dept" name="origen" readonly style="opacity:0.7;" placeholder="Seleccione un equipo primero">
               </div>
               
               <div class="form-group">
                 <label class="form-label" for="transfer-dest-dept">Dirección de Destino *</label>
-                <select class="form-select" id="transfer-dest-dept" required>
-                  <option value="">Seleccione destino...</option>
+                <select class="form-select" id="transfer-dest-dept" name="destino" required>
+                  <option value="">Seleccione destino…</option>
                   <!-- Opciones de direcciones cargadas con JavaScript -->
                 </select>
               </div>
               
               <div class="form-group">
                 <label class="form-label" for="transfer-authorized-by">Autorizado por *</label>
-                <input type="text" class="form-input" id="transfer-authorized-by" placeholder="Nombre de quien autoriza" required>
+                <input type="text" class="form-input" id="transfer-authorized-by" name="autorizado-por" autocomplete="name" placeholder="Nombre de quien autoriza" required>
               </div>
               
               <div class="form-group">
                 <label class="form-label" for="transfer-date">Fecha de Traspaso *</label>
-                <input type="datetime-local" class="form-input" id="transfer-date" required>
+                <input type="datetime-local" class="form-input" id="transfer-date" name="fecha-traspaso" required>
               </div>
               
               <div class="form-group full-width">
                 <label class="form-label" for="transfer-reason">Motivo / Descripción del Traspaso *</label>
-                <textarea class="form-textarea" id="transfer-reason" placeholder="Describa el motivo del cambio de adscripción..." required></textarea>
+                <textarea class="form-textarea" id="transfer-reason" name="motivo" placeholder="Describa el motivo del cambio de adscripción…" required></textarea>
               </div>
               
               <div class="form-group full-width" style="margin-top:10px;">
@@ -456,8 +458,8 @@
             <form id="support-report-form" class="form-grid">
               <div class="form-group full-width">
                 <label class="form-label" for="support-asset-id">Seleccionar Equipo *</label>
-                <select class="form-select" id="support-asset-id" required>
-                  <option value="">Seleccione equipo bajo atención...</option>
+                <select class="form-select" id="support-asset-id" name="bien" required>
+                  <option value="">Seleccione equipo bajo atención…</option>
                   <!-- Lista de bienes cargada con JavaScript -->
                 </select>
                 <div id="support-asset-preview" style="display:none; margin-top:10px;">
@@ -467,13 +469,13 @@
               
               <div class="form-group">
                 <label class="form-label" for="support-technician">Nombre del Técnico *</label>
-                <input type="text" class="form-input" id="support-technician" value="Samuel" required>
+                <input type="text" class="form-input" id="support-technician" name="tecnico" autocomplete="name" value="Samuel" required>
               </div>
               
               <div class="form-group">
                 <label class="form-label" for="support-status-after">Nuevo Estado del Equipo *</label>
-                <select class="form-select" id="support-status-after" required>
-                  <option value="">Seleccione estado posterior...</option>
+                <select class="form-select" id="support-status-after" name="estado" required>
+                  <option value="">Seleccione estado posterior…</option>
                   <option value="activo">Activo (Listo / Solucionado)</option>
                   <option value="reparacion">En Reparación (Continúa en servicio)</option>
                   <option value="desincorporado">Desincorporar (Pérdida Total)</option>
@@ -482,12 +484,12 @@
               
               <div class="form-group full-width">
                 <label class="form-label" for="support-diagnosis">Diagnóstico Técnico / Reporte de Falla *</label>
-                <textarea class="form-textarea" id="support-diagnosis" placeholder="¿Qué falla presenta el equipo? Síntomas y problemas identificados." required></textarea>
+                <textarea class="form-textarea" id="support-diagnosis" name="diagnostico" placeholder="¿Qué falla presenta el equipo? Síntomas y problemas identificados." required></textarea>
               </div>
               
               <div class="form-group full-width">
                 <label class="form-label" for="support-action">Acción Realizada / Solución Técnica *</label>
-                <textarea class="form-textarea" id="support-action" placeholder="¿Qué mantenimiento o reparación realizó? Detalle repuestos requeridos o instalados." required></textarea>
+                <textarea class="form-textarea" id="support-action" name="accion" placeholder="¿Qué mantenimiento o reparación realizó? Detalle repuestos requeridos o instalados." required></textarea>
               </div>
               
               <div class="form-group full-width" style="margin-top:10px;">
@@ -517,46 +519,46 @@
           <!-- Tarjetas modernas de tipo de informe -->
           <div class="report-section-title">Seleccionar tipo de informe</div>
           
-          <div class="report-cards-grid">
-            <div class="report-option-card active" data-value="institucion">
-              <div class="report-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-              </div>
-              <div class="report-card-info">
-                <div class="report-card-title">Informe General</div>
-                <div class="report-card-desc">Resumen total consolidado de bienes a nivel de toda la institución.</div>
-              </div>
-            </div>
+          <div class="report-cards-grid" role="group" aria-label="Tipo de informe">
+            <button type="button" class="report-option-card active" data-value="institucion" aria-pressed="true">
+              <span class="report-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </span>
+              <span class="report-card-info">
+                <span class="report-card-title">Informe General</span>
+                <span class="report-card-desc">Resumen total consolidado de bienes a nivel de toda la institución.</span>
+              </span>
+            </button>
             
-            <div class="report-option-card" data-value="direccion">
-              <div class="report-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </div>
-              <div class="report-card-info">
-                <div class="report-card-title">Detallado por Dirección</div>
-                <div class="report-card-desc">Listado detallado de bienes asignados a una oficina o departamento.</div>
-              </div>
-            </div>
+            <button type="button" class="report-option-card" data-value="direccion" aria-pressed="false">
+              <span class="report-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <span class="report-card-info">
+                <span class="report-card-title">Detallado por Dirección</span>
+                <span class="report-card-desc">Listado detallado de bienes asignados a una oficina o departamento.</span>
+              </span>
+            </button>
             
-            <div class="report-option-card" data-value="estado">
-              <div class="report-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-              </div>
-              <div class="report-card-info">
-                <div class="report-card-title">Detallado por Estado</div>
-                <div class="report-card-desc">Filtro analítico de equipos clasificados según su estatus operativo.</div>
-              </div>
-            </div>
+            <button type="button" class="report-option-card" data-value="estado" aria-pressed="false">
+              <span class="report-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              </span>
+              <span class="report-card-info">
+                <span class="report-card-title">Detallado por Estado</span>
+                <span class="report-card-desc">Filtro analítico de equipos clasificados según su estatus operativo.</span>
+              </span>
+            </button>
             
-            <div class="report-option-card" data-value="condicion">
-              <div class="report-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              </div>
-              <div class="report-card-info">
-                <div class="report-card-title">Condición y Operatividad</div>
-                <div class="report-card-desc">Evaluación del estado técnico de los equipos, defectos y mejoras.</div>
-              </div>
-            </div>
+            <button type="button" class="report-option-card" data-value="condicion" aria-pressed="false">
+              <span class="report-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </span>
+              <span class="report-card-info">
+                <span class="report-card-title">Condición y Operatividad</span>
+                <span class="report-card-desc">Evaluación del estado técnico de los equipos, defectos y mejoras.</span>
+              </span>
+            </button>
           </div>
           
           <input type="hidden" id="report-type" value="institucion">
@@ -570,20 +572,20 @@
             <div class="filters-group" style="margin-bottom:0;">
               <div class="form-group" id="report-param-dept-wrapper" style="display:none; min-width:250px;">
                 <label class="form-label" for="report-param-dept">Dirección / Oficina</label>
-                <select class="form-select" id="report-param-dept">
+                <select class="form-select" id="report-param-dept" name="direccion">
                   <!-- Carga dinámica con JavaScript -->
                 </select>
               </div>
               
               <div class="form-group" id="report-param-status-wrapper" style="display:none; min-width:250px;">
                 <label class="form-label" for="report-param-status">Estado de Bienes</label>
-                <select class="form-select" id="report-param-status">
+                <select class="form-select" id="report-param-status" name="estado">
                   <!-- Carga dinámica con JavaScript -->
                 </select>
               </div>
             </div>
             
-            <button class="btn btn-secondary" id="btn-print-report">
+            <button type="button" class="btn btn-secondary" id="btn-print-report">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
                 <polyline points="6 9 6 2 18 2 18 9" />
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
@@ -651,20 +653,20 @@
             
             <!-- Pestañas de historial e informes técnicos -->
             <div>
-              <div class="detail-tabs">
-                <button class="detail-tab-btn active" data-tab="tab-history">Historial de Movimientos</button>
-                <button class="detail-tab-btn" data-tab="tab-support-reports">Informes Técnicos</button>
+              <div class="detail-tabs" role="tablist" aria-label="Detalle del bien">
+                <button type="button" class="detail-tab-btn active" id="tab-btn-history" role="tab" aria-selected="true" aria-controls="tab-history" data-tab="tab-history" tabindex="0">Historial de Movimientos</button>
+                <button type="button" class="detail-tab-btn" id="tab-btn-support-reports" role="tab" aria-selected="false" aria-controls="tab-support-reports" data-tab="tab-support-reports" tabindex="-1">Informes Técnicos</button>
               </div>
               
               <!-- Pestaña: Historial -->
-              <div class="tab-pane active" id="tab-history">
+              <div class="tab-pane active" id="tab-history" role="tabpanel" aria-labelledby="tab-btn-history" tabindex="0">
                 <div class="timeline" id="detail-history-timeline" style="margin-top:14px; max-height:280px; overflow-y:auto; padding-right:4px;">
                   <!-- Los eventos de la línea de tiempo se insertan aquí -->
                 </div>
               </div>
               
               <!-- Pestaña: Informes técnicos -->
-              <div class="tab-pane" id="tab-support-reports">
+              <div class="tab-pane" id="tab-support-reports" role="tabpanel" aria-labelledby="tab-btn-support-reports" tabindex="0">
                 <div class="technical-reports-list" id="detail-reports-list" style="margin-top:14px; max-height:280px; overflow-y:auto; padding-right:4px;">
                   <!-- Los informes de mantenimiento se insertan aquí -->
                 </div>
@@ -675,8 +677,8 @@
       </div>
       
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="btn-edit-asset">Editar Bien</button>
-        <button class="btn btn-primary" id="btn-detail-close">Cerrar</button>
+        <button type="button" class="btn btn-secondary" id="btn-edit-asset">Editar Bien</button>
+        <button type="button" class="btn btn-primary" id="btn-detail-close">Cerrar</button>
       </div>
     </div>
   </div>
@@ -692,30 +694,30 @@
       </div>
       
       <form id="asset-upsert-form">
-        <input type="hidden" id="form-asset-id" value="">
+        <input type="hidden" id="form-asset-id" name="id" value="">
         
         <div class="modal-body" style="gap:16px;">
           <!-- Datos básicos -->
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label" for="form-nro-bien">NRO de Bien Nacional *</label>
-              <input type="text" class="form-input" id="form-nro-bien" placeholder="Ej: BIEN-008930" required>
+              <input type="text" class="form-input" id="form-nro-bien" name="nro-bien" autocomplete="off" spellcheck="false" placeholder="Ej: BIEN-008930" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="form-name">Nombre del Equipo *</label>
-              <input type="text" class="form-input" id="form-name" placeholder="Ej: Laptop HP ProBook 440" required>
+              <input type="text" class="form-input" id="form-name" name="nombre" autocomplete="off" placeholder="Ej: Laptop HP ProBook 440" required>
             </div>
             
             <div class="form-group full-width">
               <label class="form-label" for="form-department">Dirección de Adscripción *</label>
-              <select class="form-select" id="form-department" required>
-                <option value="">Seleccione dirección...</option>
+              <select class="form-select" id="form-department" name="direccion" required>
+                <option value="">Seleccione dirección…</option>
                 <!-- Cargado con JavaScript -->
               </select>
             </div>
             <div class="form-group">
               <label class="form-label" for="form-status">Estado del Equipo *</label>
-              <select class="form-select" id="form-status" required>
+              <select class="form-select" id="form-status" name="estado" required>
                 <option value="activo">Activo</option>
                 <option value="reparacion">En Reparación</option>
                 <option value="desincorporado">Desincorporado</option>
@@ -723,7 +725,7 @@
             </div>
             <div class="form-group">
               <label class="form-label" for="form-condition">Condición del Bien *</label>
-              <select class="form-select" id="form-condition" required>
+              <select class="form-select" id="form-condition" name="condicion" required>
                 <option value="bueno">Bueno</option>
                 <option value="mejorable">Mejorable</option>
                 <option value="obsoleto">Obsoleto</option>
@@ -732,22 +734,22 @@
             
             <div class="form-group full-width">
               <label class="form-label" for="form-description">Descripción General *</label>
-              <textarea class="form-textarea" id="form-description" placeholder="Describa el equipo, uso y condiciones generales..." style="min-height:80px;" required></textarea>
+              <textarea class="form-textarea" id="form-description" name="descripcion" placeholder="Describa el equipo, uso y condiciones generales…" style="min-height:80px;" required></textarea>
             </div>
           </div>
           
           <!-- Sección de evidencia fotográfica -->
           <div class="form-group">
-            <label class="form-label">Evidencia Fotográfica / Ficha Visual</label>
-            <div class="image-upload-wrapper" id="image-upload-area">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <span class="form-label" id="image-upload-label">Evidencia Fotográfica / Ficha Visual</span>
+            <button type="button" class="image-upload-wrapper" id="image-upload-area" aria-labelledby="image-upload-label" aria-controls="form-image-input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                 <circle cx="12" cy="13" r="4"/>
               </svg>
               <span class="image-upload-text">Presione aquí o arrastre una imagen para subir evidencia</span>
-              <img id="form-image-preview" class="image-upload-preview" src="src/assets/favicon/favicon.svg" alt="Vista previa de evidencia">
-              <input type="file" id="form-image-input" accept="image/*" style="display:none;">
-            </div>
+              <img id="form-image-preview" class="image-upload-preview" src="src/assets/favicon/favicon.svg" alt="Vista previa de evidencia" width="288" height="150">
+            </button>
+            <input type="file" id="form-image-input" accept="image/*" hidden>
           </div>
           
           <!-- Panel de especificaciones técnicas -->
@@ -756,27 +758,27 @@
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="form-brand">Marca</label>
-                <input type="text" class="form-input" id="form-brand" placeholder="Ej: HP, Dell, Cisco">
+                <input type="text" class="form-input" id="form-brand" name="marca" autocomplete="off" placeholder="Ej: HP, Dell, Cisco">
               </div>
               <div class="form-group">
                 <label class="form-label" for="form-model">Modelo</label>
-                <input type="text" class="form-input" id="form-model" placeholder="Ej: ProBook 440 G8">
+                <input type="text" class="form-input" id="form-model" name="modelo" autocomplete="off" placeholder="Ej: ProBook 440 G8">
               </div>
               <div class="form-group">
                 <label class="form-label" for="form-serial">Número de Serie</label>
-                <input type="text" class="form-input" id="form-serial" placeholder="Ej: S/N CN20392X">
+                <input type="text" class="form-input" id="form-serial" name="numero-serie" autocomplete="off" spellcheck="false" placeholder="Ej: S/N CN20392X">
               </div>
               <div class="form-group">
                 <label class="form-label" for="form-processor">Procesador / CPU</label>
-                <input type="text" class="form-input" id="form-processor" placeholder="Ej: Intel Core i5 / Apple M2">
+                <input type="text" class="form-input" id="form-processor" name="procesador" autocomplete="off" spellcheck="false" placeholder="Ej: Intel Core i5 / Apple M2">
               </div>
               <div class="form-group">
                 <label class="form-label" for="form-ram">Memoria RAM</label>
-                <input type="text" class="form-input" id="form-ram" placeholder="Ej: 16 GB DDR4">
+                <input type="text" class="form-input" id="form-ram" name="ram" autocomplete="off" spellcheck="false" placeholder="Ej: 16 GB DDR4">
               </div>
               <div class="form-group">
                 <label class="form-label" for="form-storage">Almacenamiento (HDD/SSD)</label>
-                <input type="text" class="form-input" id="form-storage" placeholder="Ej: 512 GB NVMe SSD">
+                <input type="text" class="form-input" id="form-storage" name="almacenamiento" autocomplete="off" spellcheck="false" placeholder="Ej: 512 GB NVMe SSD">
               </div>
             </div>
           </div>

@@ -25,6 +25,21 @@ export function updateSidebarProfile(user) {
 }
 
 /**
+ * Activa o desactiva la interactividad del panel principal mientras el login
+ * está visible, para que el foco y los lectores de pantalla no entren en él.
+ * @param {boolean} isInert
+ */
+function setAppInert(isInert) {
+  const app = document.querySelector(".app-container");
+  if (!app) return;
+  if (isInert) {
+    app.setAttribute("inert", "");
+  } else {
+    app.removeAttribute("inert");
+  }
+}
+
+/**
  * Verifica si el usuario está autenticado actualmente (sea en localStorage o sessionStorage).
  * @returns {boolean} - Retorna true si hay una sesión activa.
  */
@@ -34,6 +49,7 @@ export function checkAuth() {
   
   if (session === "active") {
     document.body.classList.remove("auth-active");
+    setAppInert(false);
     const loginOverlay = document.getElementById("login-screen");
     if (loginOverlay) {
       loginOverlay.style.display = "none";
@@ -48,6 +64,7 @@ export function checkAuth() {
     return true;
   } else {
     document.body.classList.add("auth-active");
+    setAppInert(true);
     const loginOverlay = document.getElementById("login-screen");
     if (loginOverlay) {
       loginOverlay.style.display = "flex";
@@ -148,6 +165,7 @@ export function initAuth(onLoginSuccess) {
 
           setTimeout(() => {
             document.body.classList.remove("auth-active");
+            setAppInert(false);
             if (loginOverlay) {
               loginOverlay.style.display = "none";
             }
@@ -174,7 +192,9 @@ export function initAuth(onLoginSuccess) {
         // Muestra el mensaje de error con animación de sacudida
         if (errorMsg) {
           errorMsg.style.display = "block";
-          errorMsg.textContent = "Usuario o contraseña incorrectos.";
+          errorMsg.textContent = error && error.message === "Credenciales inválidas"
+            ? "Usuario o contraseña incorrectos."
+            : "No se pudo conectar con el servidor. Inténtalo de nuevo.";
           // Reinicia la animación de sacudida
           errorMsg.style.animation = 'none';
           errorMsg.offsetHeight; /* Fuerza el redibujado del navegador */

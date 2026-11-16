@@ -26,7 +26,7 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   }
 
   const selectId = selectElement.id;
-  const placeholder = selectElement.options[0]?.textContent || "Seleccione una opción...";
+  const placeholder = selectElement.options[0]?.textContent || "Seleccione una opción…";
 
   // 1. Crear la estructura del contenedor
   const container = document.createElement("div");
@@ -51,6 +51,15 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   searchInput.setAttribute("aria-autocomplete", "list");
   searchInput.setAttribute("aria-expanded", "false");
   searchInput.setAttribute("aria-controls", `searchable-select-list-${selectId}`);
+
+  // Nombre accesible: reutiliza la etiqueta del select original si existe
+  const labelText = selectElement.labels && selectElement.labels[0]
+    ? selectElement.labels[0].textContent.trim()
+    : "";
+  searchInput.setAttribute(
+    "aria-label",
+    selectElement.getAttribute("aria-label") || labelText || placeholder
+  );
 
   // Icono de flecha
   const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -99,6 +108,10 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   searchInput.addEventListener("input", (e) => {
     const query = e.target.value.toLowerCase().trim();
     filterOptions(query, dropdown);
+    dropdown.querySelectorAll(".searchable-select-item.highlighted").forEach(item => {
+      item.classList.remove("highlighted");
+    });
+    searchInput.removeAttribute("aria-activedescendant");
   });
 
   // Cierra el desplegable al hacer clic fuera de él
@@ -115,6 +128,21 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
   });
 
   // Navegación con el teclado
+  const highlightItem = (item) => {
+    dropdown.querySelectorAll(".searchable-select-item.highlighted").forEach(el => {
+      el.classList.remove("highlighted");
+    });
+
+    if (!item) {
+      searchInput.removeAttribute("aria-activedescendant");
+      return;
+    }
+
+    item.classList.add("highlighted");
+    searchInput.setAttribute("aria-activedescendant", item.id);
+    item.scrollIntoView({ block: "nearest" });
+  };
+
   searchInput.addEventListener("keydown", (e) => {
     const items = Array.from(dropdown.querySelectorAll(".searchable-select-item:not([style*='display: none'])"));
     if (items.length === 0) return;
@@ -125,18 +153,18 @@ export function enhanceSelectWithSearch(selectElement, assets, STATUSES) {
       e.preventDefault();
       if (!container.classList.contains("open")) {
         setOpen(container, true);
-        return;
+        currentIndex = -1;
       }
-      if (currentIndex !== -1) items[currentIndex].classList.remove("highlighted");
-      currentIndex = (currentIndex + 1) % items.length;
-      items[currentIndex].classList.add("highlighted");
-      items[currentIndex].scrollIntoView({ block: "nearest" });
+      highlightItem(items[(currentIndex + 1) % items.length]);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      if (currentIndex !== -1) items[currentIndex].classList.remove("highlighted");
-      currentIndex = (currentIndex - 1 + items.length) % items.length;
-      items[currentIndex].classList.add("highlighted");
-      items[currentIndex].scrollIntoView({ block: "nearest" });
+      if (!container.classList.contains("open")) {
+        setOpen(container, true);
+      }
+      const previousIndex = currentIndex === -1
+        ? items.length - 1
+        : (currentIndex - 1 + items.length) % items.length;
+      highlightItem(items[previousIndex]);
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (currentIndex !== -1) {
@@ -158,6 +186,7 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
   const options = Array.from(selectElement.options);
 
   let hasItems = false;
+  let optionIndex = 0;
 
   options.forEach(opt => {
     // Omite la opción de marcador de posición vacía
@@ -166,6 +195,7 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
     hasItems = true;
     const item = document.createElement("div");
     item.className = "searchable-select-item";
+    item.id = `${dropdown.id}-option-${optionIndex++}`;
     item.dataset.value = opt.value;
     item.setAttribute("role", "option");
     item.setAttribute("aria-selected", "false");
@@ -188,7 +218,18 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
         </div>
       `;
       // Texto auxiliar para la búsqueda
-      item.dataset.search = `${asset.name} ${asset.nroBien} ${asset.department} ${asset.brand || ''} ${asset.model || ''} ${asset.serialNumber || ''}`.toLowerCase();
+      const specs = asset.technicalSpecs || {};
+      item.dataset.search = [
+        asset.name,
+        asset.nroBien,
+        asset.department,
+        specs.brand,
+        specs.model,
+        specs.serialNumber,
+        specs.processor,
+        specs.ram,
+        specs.storage
+      ].filter(Boolean).join(" ").toLowerCase();
     } else {
       // Alternativa con el texto estándar de la opción
       item.innerHTML = `
@@ -221,6 +262,7 @@ function populateDropdown(selectElement, dropdown, searchInput, assets, STATUSES
   // Fila auxiliar cuando no hay resultados
   const noResults = document.createElement("div");
   noResults.className = "searchable-select-no-results";
+  noResults.setAttribute("role", "status");
   noResults.textContent = "No se encontraron equipos";
   noResults.style.display = "none";
   dropdown.appendChild(noResults);
@@ -262,7 +304,10 @@ function setOpen(container, isOpen) {
   if (!container) return;
   container.classList.toggle("open", isOpen);
   const input = container.querySelector(".searchable-select-input");
-  if (input) input.setAttribute("aria-expanded", String(isOpen));
+  if (input) {
+    input.setAttribute("aria-expanded", String(isOpen));
+    if (!isOpen) input.removeAttribute("aria-activedescendant");
+  }
 }
 
 /**

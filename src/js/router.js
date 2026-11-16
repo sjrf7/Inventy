@@ -29,6 +29,27 @@ export const VIEWS = {
   }
 };
 
+/** Hash público de cada vista: permite enlaces profundos y atrás/adelante. */
+const HASH_BY_VIEW = {
+  dashboard: "dashboard",
+  inventory: "inventario",
+  transfers: "traspasos",
+  support: "soporte",
+  reports: "reportes"
+};
+
+const VIEW_BY_HASH = {
+  dashboard: "dashboard",
+  inventario: "inventory",
+  inventory: "inventory",
+  traspasos: "transfers",
+  transfers: "transfers",
+  soporte: "support",
+  support: "support",
+  reportes: "reports",
+  reports: "reports"
+};
+
 let activeView = "dashboard";
 
 /**
@@ -44,14 +65,10 @@ export function getActiveView() {
  * @param {Function} onViewSwitch - Callback que se ejecuta al cambiar de vista
  */
 export function setupRouter(onViewSwitch) {
-  const navItems = document.querySelectorAll(".nav-item");
-  
-  navItems.forEach(item => {
-    item.addEventListener("click", (e) => {
-      e.preventDefault();
-      const viewName = item.getAttribute("data-view");
-      switchView(viewName, onViewSwitch);
-      
+  // Los enlaces de navegación conservan su href (#inventario, #traspasos…):
+  // el navegador actualiza la URL y el hashchange hace el cambio de vista.
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.addEventListener("click", () => {
       // Cierra la barra lateral al elegir una vista en móviles
       const sidebar = document.getElementById("app-sidebar");
       const menuToggle = document.getElementById("mobile-menu-toggle");
@@ -61,35 +78,46 @@ export function setupRouter(onViewSwitch) {
       menuToggle?.setAttribute("aria-label", "Abrir menú");
     });
   });
-  
-  // Gestiona los cambios del hash de la URL
+
   const handleHash = () => {
-    const hash = window.location.hash.replace("#", "");
-    const matchingView = Object.keys(VIEWS).find(k => 
-      k === hash || 
-      (k === "inventory" && hash === "inventario") || 
-      (k === "transfers" && hash === "traspasos") || 
-      (k === "support" && hash === "soporte") || 
-      (k === "reports" && hash === "reportes")
-    );
-    if (matchingView) {
-      switchView(matchingView, onViewSwitch);
+    const hash = window.location.hash.replace("#", "").toLowerCase();
+    const matchingView = VIEW_BY_HASH[hash];
+    if (!matchingView) {
+      window.history.replaceState(null, "", "#dashboard");
     }
+    switchView(matchingView || "dashboard", onViewSwitch, false);
   };
 
   window.addEventListener("hashchange", handleHash);
-  handleHash(); // comprobación inicial
+  window.addEventListener("popstate", handleHash);
+
+  if (window.location.hash) {
+    handleHash();
+  } else {
+    // La vista inicial es el dashboard; reflejarlo en la URL sin recargar.
+    window.history.replaceState(null, "", "#dashboard");
+    switchView("dashboard", onViewSwitch, false);
+  }
 }
 
 /**
  * Cambia de forma programática el panel de vista activo.
  * @param {string} viewName - Clave del nombre de la vista
  * @param {Function} onViewSwitch - Callback que se dispara al cambiar de vista
+ * @param {boolean} [updateHash=true] - Reflejar la vista en la URL
  */
-export function switchView(viewName, onViewSwitch) {
+export function switchView(viewName, onViewSwitch, updateHash = true) {
   if (!VIEWS[viewName]) return;
   
   activeView = viewName;
+
+  // La URL es la fuente de verdad de la vista activa (atrás/adelante y enlaces)
+  if (updateHash) {
+    const targetHash = `#${HASH_BY_VIEW[viewName]}`;
+    if (window.location.hash !== targetHash) {
+      window.history.pushState(null, "", targetHash);
+    }
+  }
   
   // Actualiza la clase activa en la barra lateral
   document.querySelectorAll(".nav-item").forEach(item => {

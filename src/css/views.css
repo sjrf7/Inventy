@@ -1322,6 +1322,7 @@
 }
 
 .report-option-card {
+  width: 100%;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -1330,6 +1331,9 @@
   gap: 11px;
   cursor: pointer;
   align-items: flex-start;
+  text-align: left;
+  font: inherit;
+  color: inherit;
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
   box-shadow: var(--shadow-card);
 }

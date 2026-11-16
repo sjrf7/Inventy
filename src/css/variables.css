@@ -1,9 +1,10 @@
 /* Hoja de Estilos de Inventy - Moderna, Minimalista y de Alto Rendimiento */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+/* La tipografía se carga con <link> en index.html para evitar @import en cascada. */
 
 /* --- Variables de tema --- */
 :root {
+  color-scheme: dark;
   --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Superficies (tema oscuro por defecto) */
@@ -77,6 +78,7 @@
 
 /* Anulaciones del tema claro */
 [data-theme="light"] {
+  color-scheme: light;
   --bg-primary: #F6F8FB;
   --bg-secondary: #FFFFFF;
   --bg-tertiary: #EEF2F7;

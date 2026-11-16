@@ -9,11 +9,12 @@ import { generateReport } from './views/reports.js';
 import { openAssetDetailModal, openAssetFormModal } from './components/modals.js';
 import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr, escapeHtml, getDepartmentOptions } from './utils.js';
 import { initMotion, closeModal, closeAllModals, revealPreview, runThemeTransition } from './motion.js';
-import { initAuth } from './auth.js?v=1.1.0';
+import { initAuth } from './auth.js?v=1.2.3';
 
 let uploadedImageBase64 = null;
 let activeDetailAssetId = null;
 let appInitialized = false;
+let assetFormDirty = false;
 
 /**
  * Direcciones institucionales combinadas con las que existen en el inventario.
@@ -53,6 +54,44 @@ function showAppAlert(title, text, icon = 'info') {
   }
 }
 
+/**
+ * Muestra una confirmación de dos opciones y resuelve a true solo si el
+ * usuario confirma la acción.
+ * @param {string} title
+ * @param {string} text
+ * @param {string} confirmButtonText
+ * @param {string} cancelButtonText
+ * @returns {Promise<boolean>}
+ */
+function showAppConfirm(title, text, confirmButtonText = 'Sí, continuar', cancelButtonText = 'Cancelar') {
+  if (window.Swal) {
+    return window.Swal.fire({
+      title: title,
+      text: text,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: confirmButtonText,
+      cancelButtonText: cancelButtonText,
+      customClass: {
+        popup: 'swal-popup-custom',
+        title: 'swal-title-custom',
+        htmlContainer: 'swal-text-custom',
+        confirmButton: 'swal-btn-confirm',
+        cancelButton: 'swal-btn-cancel'
+      },
+      buttonsStyling: false,
+      showClass: {
+        popup: 'swal-show-animation'
+      },
+      hideClass: {
+        popup: 'swal-hide-animation'
+      }
+    }).then(result => result.isConfirmed);
+  }
+
+  return Promise.resolve(window.confirm(`${title}\n\n${text}`));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
 });
@@ -68,6 +107,7 @@ function initApp() {
   const savedTheme = localStorage.getItem("inventy_theme") || "dark";
   document.documentElement.setAttribute("data-theme", savedTheme);
   updateThemeIcon(savedTheme);
+  updateThemeColor(savedTheme);
   
   // Inicializa la capa de autenticación y sus eventos
   initAuth(() => {
@@ -230,6 +270,8 @@ function setupEventListeners() {
   // Cierra la barra lateral y los modales con la tecla Escape
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    // SweetAlert2 gestiona su propio cierre con Escape
+    if (window.Swal?.isVisible?.()) return;
 
     const sidebar = document.getElementById("app-sidebar");
     const menuToggle = document.getElementById("mobile-menu-toggle");
@@ -238,6 +280,13 @@ function setupEventListeners() {
       document.getElementById("sidebar-scrim")?.classList.remove("active");
       menuToggle?.setAttribute("aria-expanded", "false");
       menuToggle?.setAttribute("aria-label", "Abrir menú");
+    }
+
+    // Si el formulario de bienes tiene cambios, pide confirmación antes de cerrar
+    const activeFormModal = document.getElementById("modal-asset-form");
+    if (activeFormModal?.classList.contains("active") && assetFormDirty) {
+      closeFormModal();
+      return;
     }
 
     closeAllModals();
@@ -270,6 +319,7 @@ function setupEventListeners() {
         document.documentElement.setAttribute("data-theme", newTheme);
         localStorage.setItem("inventy_theme", newTheme);
         updateThemeIcon(newTheme);
+        updateThemeColor(newTheme);
         renderAll(); // Redibuja el gráfico de dona aplicando las variables de tema
       }, themeToggle);
     });
@@ -288,21 +338,26 @@ function setupEventListeners() {
         const formDept = document.getElementById("form-department");
         if (formDept) formDept.value = currentDeptFilter;
       }
+      assetFormDirty = false;
     });
   }
 
-  // Búsqueda global de bienes
+  // Búsqueda global de bienes (con retardo corto para no redibujar por tecla)
   const globalSearch = document.getElementById("global-search");
   if (globalSearch) {
+    let searchDebounce;
     globalSearch.addEventListener("input", () => {
-      const activeView = getActiveView();
-      if (activeView !== "inventory") {
-        switchView("inventory", (view) => {
-          renderView(view);
-        });
-      } else {
-        renderInventoryList(getAssets(), STATUSES, onDetailClick, onSupportClick);
-      }
+      window.clearTimeout(searchDebounce);
+      searchDebounce = window.setTimeout(() => {
+        const activeView = getActiveView();
+        if (activeView !== "inventory") {
+          switchView("inventory", (view) => {
+            renderView(view);
+          });
+        } else {
+          renderInventoryList(getAssets(), STATUSES, onDetailClick, onSupportClick);
+        }
+      }, 140);
     });
   }
 
@@ -341,38 +396,90 @@ function setupEventListeners() {
           openAssetFormModal(id, getAssets(), ASSET_SVGS, (img) => {
             uploadedImageBase64 = img;
           });
+          assetFormDirty = false;
         }, 150);
       }
     });
   }
 
-  // Cambio de pestañas dentro de los detalles del bien
-  const tabButtons = document.querySelectorAll(".detail-tab-btn");
+  // Cambio de pestañas dentro de los detalles del bien (patrón ARIA tabs)
+  const tabButtons = Array.from(document.querySelectorAll(".detail-tab-btn"));
+  const tabPanels = Array.from(document.querySelectorAll(".tab-pane"));
+
+  const activateTab = (btn, focus = false) => {
+    if (!btn) return;
+    const targetTab = btn.getAttribute("data-tab");
+
+    tabButtons.forEach(b => {
+      const selected = b === btn;
+      b.classList.toggle("active", selected);
+      b.setAttribute("aria-selected", String(selected));
+      b.tabIndex = selected ? 0 : -1;
+    });
+
+    tabPanels.forEach(pane => {
+      pane.classList.toggle("active", pane.id === targetTab);
+    });
+
+    if (focus) btn.focus();
+  };
+
   tabButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      tabButtons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      
-      const targetTab = btn.getAttribute("data-tab");
-      document.querySelectorAll(".tab-pane").forEach(pane => {
-        if (pane.id === targetTab) {
-          pane.classList.add("active");
-        } else {
-          pane.classList.remove("active");
-        }
-      });
+    btn.addEventListener("click", () => activateTab(btn));
+    btn.addEventListener("keydown", (e) => {
+      if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
+      e.preventDefault();
+
+      const currentIndex = tabButtons.indexOf(btn);
+      let nextIndex = currentIndex;
+
+      if (e.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabButtons.length;
+      if (e.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabButtons.length) % tabButtons.length;
+      if (e.key === "Home") nextIndex = 0;
+      if (e.key === "End") nextIndex = tabButtons.length - 1;
+
+      activateTab(tabButtons[nextIndex], true);
     });
   });
 
   // Acciones de los botones del modal de formulario
   const btnCloseForm = document.getElementById("btn-close-form");
   const btnCancelForm = document.getElementById("btn-cancel-form");
+  const formModal = document.getElementById("modal-asset-form");
+
   const closeFormModal = () => {
-    closeModal(document.getElementById("modal-asset-form"));
+    if (!formModal) return Promise.resolve();
+
+    if (!assetFormDirty) {
+      closeModal(formModal);
+      return Promise.resolve();
+    }
+
+    return showAppConfirm(
+      "¿Descartar cambios?",
+      "Los datos ingresados en este formulario se perderán.",
+      "Sí, descartar",
+      "Seguir editando"
+    ).then(confirmed => {
+      if (!confirmed) return;
+      assetFormDirty = false;
+      closeModal(formModal);
+    });
   };
 
   if (btnCloseForm) btnCloseForm.addEventListener("click", closeFormModal);
   if (btnCancelForm) btnCancelForm.addEventListener("click", closeFormModal);
+
+  // El clic en el fondo y la tecla Escape también deben respetar los cambios.
+  // El listener se registra antes que el de motion.js y lo intercepta para que
+  // el modal no se cierre sin confirmación.
+  if (formModal) {
+    formModal.addEventListener("pointerdown", (event) => {
+      if (event.target !== formModal || !assetFormDirty) return;
+      event.stopImmediatePropagation();
+      closeFormModal();
+    }, true);
+  }
 
   // Carga de imagen mediante arrastrar y soltar
   const uploadArea = document.getElementById("image-upload-area");
@@ -408,6 +515,12 @@ function setupEventListeners() {
   // Envío del formulario de bienes (alta/edición)
   const assetForm = document.getElementById("asset-upsert-form");
   if (assetForm) {
+    assetForm.addEventListener("input", () => {
+      assetFormDirty = true;
+    });
+    assetForm.addEventListener("change", () => {
+      assetFormDirty = true;
+    });
     assetForm.addEventListener("submit", (e) => {
       e.preventDefault();
       handleAssetFormSubmit();
@@ -517,8 +630,12 @@ function setupEventListeners() {
   const reportOptionCards = document.querySelectorAll(".report-option-card");
   reportOptionCards.forEach(card => {
     card.addEventListener("click", () => {
-      reportOptionCards.forEach(c => c.classList.remove("active"));
+      reportOptionCards.forEach(c => {
+        c.classList.remove("active");
+        c.setAttribute("aria-pressed", "false");
+      });
       card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       
       const val = card.getAttribute("data-value");
       if (reportType) {
@@ -560,6 +677,7 @@ function setupEventListeners() {
  * Procesa la imagen seleccionada y la convierte a Base64 para su previsualización.
  */
 function processUploadedImage(file) {
+  assetFormDirty = true;
   convertToBase64(file).then(base64 => {
     uploadedImageBase64 = base64;
     
@@ -582,7 +700,7 @@ function processUploadedImage(file) {
 /**
  * Lógica de envío del formulario para crear y modificar bienes.
  */
-function handleAssetFormSubmit() {
+async function handleAssetFormSubmit() {
   const idField = document.getElementById("form-asset-id").value;
   const nroBien = document.getElementById("form-nro-bien").value.trim();
   const name = document.getElementById("form-name").value.trim();
@@ -615,6 +733,18 @@ function handleAssetFormSubmit() {
     
     const oldStatus = asset.status;
     const oldDept = asset.department;
+
+    // Desincorporar es una acción irreversible para el inventario activo:
+    // se pide confirmación explícita antes de guardar.
+    if (status === "desincorporado" && oldStatus !== "desincorporado") {
+      const confirmed = await showAppConfirm(
+        "¿Desincorporar este bien?",
+        `“${asset.name}” quedará fuera de servicio y el cambio se registrará en su historial.`,
+        "Sí, desincorporar",
+        "Cancelar"
+      );
+      if (!confirmed) return;
+    }
     
     const updated = {
       name,
@@ -694,6 +824,7 @@ function handleAssetFormSubmit() {
   }
   
   savePromise.then(() => {
+    assetFormDirty = false;
     closeModal(document.getElementById("modal-asset-form"));
     populateFilterSelects();
     renderAll();
@@ -755,7 +886,7 @@ function handleTransferSubmit() {
 /**
  * Lógica de envío del formulario de reportes técnicos de mantenimiento.
  */
-function handleSupportSubmit() {
+async function handleSupportSubmit() {
   const assetId = document.getElementById("support-asset-id").value;
   const technician = document.getElementById("support-technician").value.trim();
   const statusAfter = document.getElementById("support-status-after").value;
@@ -766,6 +897,16 @@ function handleSupportSubmit() {
   if (!asset) return;
   
   const statusBefore = asset.status;
+
+  if (statusAfter === "desincorporado" && statusBefore !== "desincorporado") {
+    const confirmed = await showAppConfirm(
+      "¿Desincorporar este bien?",
+      `“${asset.name}” quedará fuera de servicio al guardar el informe técnico.`,
+      "Sí, desincorporar",
+      "Cancelar"
+    );
+    if (!confirmed) return;
+  }
   const reportDate = new Date().toISOString();
   const reportId = "REP-" + Date.now();
   
@@ -823,11 +964,29 @@ function handleSupportSubmit() {
 }
 
 /**
+ * Mantiene el color de la barra del navegador alineado con el tema activo.
+ * @param {string} theme - "dark" | "light"
+ */
+function updateThemeColor(theme) {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  meta.setAttribute("content", theme === "light" ? "#F6F8FB" : "#0A0C12");
+}
+
+/**
  * Actualiza la visibilidad del icono del selector de tema en el encabezado.
  */
 function updateThemeIcon(theme) {
   const sunIcon = document.getElementById("theme-icon-sun");
   const moonIcon = document.getElementById("theme-icon-moon");
+  const toggle = document.getElementById("theme-toggle");
+  const isLight = theme === "light";
+
+  if (toggle) {
+    toggle.setAttribute("aria-pressed", String(isLight));
+    toggle.setAttribute("aria-label", isLight ? "Cambiar a tema oscuro" : "Cambiar a tema claro");
+    toggle.setAttribute("title", isLight ? "Cambiar a tema oscuro" : "Cambiar a tema claro");
+  }
   
   if (sunIcon && moonIcon) {
     if (theme === "dark") {
