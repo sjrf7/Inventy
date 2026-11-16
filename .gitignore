@@ -5,3 +5,10 @@ api/*.log
 # Archivos del sistema operativo
 .DS_Store
 Thumbs.db
+
+# Dependencias y artefactos de pruebas
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+tests/e2e/screenshots/

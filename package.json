@@ -1,0 +1,17 @@
+{
+  "name": "inventy",
+  "version": "1.2.3",
+  "private": true,
+  "description": "Inventy — control de bienes e inventario institucional",
+  "scripts": {
+    "serve": "php -S 0.0.0.0:8000",
+    "test:e2e": "node --test tests/e2e/*.test.js",
+    "test:e2e:headed": "INVENTY_HEADED=1 node --test tests/e2e/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.49.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

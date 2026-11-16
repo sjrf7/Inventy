@@ -1,0 +1,83 @@
+# Pruebas E2E de Inventy
+
+Suite de [Playwright](https://playwright.dev/) sobre Chromium que recorre la app
+real (frontend estático + API PHP). Está escrita con el runner incluido en Node
+(`node:test`), así que no necesita Jest ni ningún framework adicional.
+
+## Requisitos
+
+- Node.js 20 o superior.
+- PHP para servir la app (`php -S`).
+- MySQL con la base de datos de Inventy ya sembrada.
+
+## Preparación
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+## Ejecución
+
+En una terminal, levanta el servidor:
+
+```bash
+npm run serve
+```
+
+En otra, ejecuta la suite:
+
+```bash
+npm run test:e2e          # Chromium sin ventana
+npm run test:e2e:headed   # Chromium visible (INVENTY_HEADED=1)
+```
+
+## Variables de entorno
+
+| Variable            | Valor por defecto       | Descripción                          |
+| ------------------- | ----------------------- | ------------------------------------ |
+| `INVENTY_BASE_URL`  | `http://localhost:8000` | URL base donde se sirve la app.      |
+| `INVENTY_USER`      | `admin`                 | Usuario de prueba.                   |
+| `INVENTY_PASS`      | `admin`                 | Contraseña de prueba.                |
+| `INVENTY_HEADED`    | (sin definir)           | `1` muestra el navegador.            |
+
+Ejemplo:
+
+```bash
+INVENTY_BASE_URL=http://192.168.0.200:8000 npm run test:e2e
+```
+
+## Qué cubre
+
+- Login correcto e incorrecto, mensaje de error y `inert` del panel.
+- Layout sin desbordamiento y navegación por hash, enlaces profundos y atrás.
+- Inventario: búsqueda, filtros por estado y orden.
+- Ficha del bien: pestañas ARIA, teclado, trampa de foco y retorno del foco.
+- Reportes: tarjetas con `aria-pressed`, selectores y tabla generada.
+- Impresión: solo el informe, ocultando la interfaz y con tinta oscura.
+- Tema claro/oscuro, `aria-pressed` y `theme-color`.
+- Soporte y traspasos: formularios y combobox accesibles.
+- Formulario de bienes: cierre directo sin cambios, confirmación al descartar
+  (botón, Escape y clic en el fondo).
+- Confirmación al desincorporar desde la ficha y desde soporte.
+- Responsive a 1280, 1024, 768 y 390 px, menú móvil y objetivos táctiles de
+  44 px con `hasTouch`.
+- Errores de JavaScript y de consola.
+
+## Datos
+
+Las pruebas no guardan cambios: abren formularios, cancelan las confirmaciones y
+descartan los borradores. Aun así, conviene ejecutarlas contra una copia local de
+la base de datos.
+
+## Estructura
+
+```
+tests/e2e/
+├── helpers.js        # Navegador, login, diálogos y utilidades
+├── inventy.test.js   # Casos de prueba
+└── README.md
+```
+
+Los nombres de archivo `*.test.js` son obligatorios para que `node --test` los
+descubra automáticamente.
