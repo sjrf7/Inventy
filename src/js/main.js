@@ -7,7 +7,7 @@ import { setupTransfersView, renderTransfersTimeline } from './views/transfers.j
 import { setupSupportView, renderPendingSupportList } from './views/support.js';
 import { generateReport } from './views/reports.js';
 import { openAssetDetailModal, openAssetFormModal } from './components/modals.js';
-import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr, getDepartmentOptions } from './utils.js';
+import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr, escapeHtml, getDepartmentOptions } from './utils.js';
 import { initMotion, closeModal, closeAllModals, revealPreview, runThemeTransition } from './motion.js';
 import { initAuth } from './auth.js?v=1.1.0';
 
@@ -436,11 +436,11 @@ function setupEventListeners() {
         
         previewDiv.innerHTML = `
           <div class="asset-select-card">
-            <img src="${escapeAttr(asset.photo || getAssetFallbackImage(asset.name))}" alt="${escapeAttr(asset.name)}">
+            <img src="${escapeAttr(asset.photo || getAssetFallbackImage(asset.name))}" alt="${escapeAttr(asset.name)}" width="44" height="44" loading="lazy">
             <div class="asset-select-info">
-              <span class="asset-select-name">${asset.name}</span>
-              <span class="asset-select-nro">${asset.nroBien}</span>
-              <span style="font-size:12px; color:var(--text-muted);">Estado: ${STATUSES[asset.status]?.label || asset.status}</span>
+              <span class="asset-select-name">${escapeHtml(asset.name)}</span>
+              <span class="asset-select-nro">${escapeHtml(asset.nroBien)}</span>
+              <span style="font-size:12px; color:var(--text-muted);">Estado: ${escapeHtml(STATUSES[asset.status]?.label || asset.status)}</span>
             </div>
           </div>
         `;
@@ -477,12 +477,12 @@ function setupEventListeners() {
       if (asset) {
         previewDiv.innerHTML = `
           <div class="asset-select-card">
-            <img src="${escapeAttr(asset.photo || getAssetFallbackImage(asset.name))}" alt="${escapeAttr(asset.name)}">
+            <img src="${escapeAttr(asset.photo || getAssetFallbackImage(asset.name))}" alt="${escapeAttr(asset.name)}" width="44" height="44" loading="lazy">
             <div class="asset-select-info">
-              <span class="asset-select-name">${asset.name}</span>
-              <span class="asset-select-nro">${asset.nroBien}</span>
-              <span style="font-size:12px; color:var(--text-muted);">Ubicación: <strong>${asset.department}</strong></span>
-              <span style="font-size:12px; color:var(--text-muted);">Estado Actual: <strong>${STATUSES[asset.status]?.label || asset.status}</strong></span>
+              <span class="asset-select-name">${escapeHtml(asset.name)}</span>
+              <span class="asset-select-nro">${escapeHtml(asset.nroBien)}</span>
+              <span style="font-size:12px; color:var(--text-muted);">Ubicación: <strong>${escapeHtml(asset.department)}</strong></span>
+              <span style="font-size:12px; color:var(--text-muted);">Estado Actual: <strong>${escapeHtml(STATUSES[asset.status]?.label || asset.status)}</strong></span>
             </div>
           </div>
         `;

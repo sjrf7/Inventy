@@ -1,4 +1,4 @@
-import { getAssetFallbackImage, escapeAttr, getStatusInfo } from '../utils.js';
+import { getAssetFallbackImage, escapeAttr, escapeHtml, getStatusInfo } from '../utils.js';
 import { captureFlipRects, playFlip } from '../motion.js';
 
 /**
@@ -82,27 +82,27 @@ export function renderInventoryList(assets, STATUSES, onDetailClick, onSupportCl
     
     card.innerHTML = `
       <div class="asset-card-image">
-        <img class="${fallbackClass}" src="${escapeAttr(asset.photo || getAssetFallbackImage(asset.name))}" alt="${escapeAttr(asset.name)}">
-        <span class="asset-badge status-${asset.status}">
-          ${statusInfo.label}
+        <img class="${fallbackClass}" src="${escapeAttr(asset.photo || getAssetFallbackImage(asset.name))}" alt="${escapeAttr(asset.name)}" width="320" height="180" loading="lazy" decoding="async">
+        <span class="asset-badge ${escapeAttr(`status-${asset.status}`)}">
+          ${escapeHtml(statusInfo.label)}
         </span>
       </div>
       <div class="asset-card-content">
-        <div class="asset-card-nro">${asset.nroBien}</div>
-        <h3 class="asset-card-name">${asset.name}</h3>
-        <p class="asset-card-desc">${asset.description || "Sin descripción disponible."}</p>
+        <div class="asset-card-nro">${escapeHtml(asset.nroBien)}</div>
+        <h3 class="asset-card-name">${escapeHtml(asset.name)}</h3>
+        <p class="asset-card-desc">${escapeHtml(asset.description || "Sin descripción disponible.")}</p>
         
         <div class="asset-card-meta">
           <div class="asset-card-dept" title="${escapeAttr(asset.department)}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            <span>${asset.department}</span>
+            <span>${escapeHtml(asset.department)}</span>
           </div>
           <div class="asset-card-actions">
-            <button class="btn btn-primary btn-sm btn-view-detail" data-id="${asset.id}" title="Ver ficha completa">
+            <button class="btn btn-primary btn-sm btn-view-detail" data-id="${escapeAttr(asset.id)}" title="Ver ficha completa">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               Ficha
             </button>
-            <button class="btn btn-secondary btn-sm btn-quick-support" data-id="${asset.id}" title="Abrir soporte técnico">
+            <button class="btn btn-secondary btn-sm btn-quick-support" data-id="${escapeAttr(asset.id)}" title="Abrir soporte técnico">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
               Soporte
             </button>
@@ -122,10 +122,9 @@ export function renderInventoryList(assets, STATUSES, onDetailClick, onSupportCl
       if (typeof onSupportClick === "function") onSupportClick(asset);
     });
     
-    // Al hacer clic en cualquier parte de la tarjeta se abre la ficha técnica
-    card.addEventListener("click", () => {
-      if (typeof onDetailClick === "function") onDetailClick(asset.id);
-    });
+    // El botón "Ficha" cubre toda la tarjeta mediante un área de clic extendida
+    // (ver .btn-view-detail::after en components.css), de modo que la tarjeta
+    // sigue abriendo el detalle sin ser un <div> con manejador de teclado propio.
     
     // Si la foto está rota o no se puede cargar, muestra la imagen de la ficha
     card.querySelector("img").addEventListener("error", () => {

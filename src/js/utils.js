@@ -99,6 +99,20 @@ export function escapeAttr(value = "") {
 }
 
 /**
+ * Escapa un valor para insertarlo como texto dentro de HTML.
+ * @param {string} value - Valor a escapar
+ * @returns {string} Valor escapado
+ */
+export function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
  * Formatea una cadena de fecha ISO a una representación de fecha/hora legible en español.
  * @param {string} dateStr - Cadena de fecha en formato ISO
  * @returns {string} Cadena formateada

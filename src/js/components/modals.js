@@ -2,7 +2,7 @@
  * Controlador de modales de Inventy
  */
 
-import { formatDate, getAssetFallbackImage } from '../utils.js';
+import { formatDate, getAssetFallbackImage, escapeHtml } from '../utils.js';
 import { openModal, staggerChildren } from '../motion.js';
 
 /**
@@ -87,14 +87,14 @@ export function openAssetDetailModal(id, assets, STATUSES, ASSET_SVGS) {
     
     let hasSpecs = false;
     Object.keys(labels).forEach(key => {
-      const val = specs[key];
-      if (val && val.trim() !== "") {
+      const val = specs[key] == null ? "" : String(specs[key]);
+      if (val.trim() !== "") {
         hasSpecs = true;
         const row = document.createElement("div");
         row.className = "spec-row";
         row.innerHTML = `
           <span class="spec-label">${labels[key]}</span>
-          <span class="spec-value">${val}</span>
+          <span class="spec-value">${escapeHtml(val)}</span>
         `;
         specsContainer.appendChild(row);
       }
@@ -129,10 +129,10 @@ export function openAssetDetailModal(id, assets, STATUSES, ASSET_SVGS) {
           <div class="timeline-dot ${h.type || 'registro'}"></div>
           <div class="timeline-content" style="padding:10px 14px;">
             <div class="timeline-header" style="margin-bottom:4px;">
-              <span class="timeline-user" style="font-size:11px;">${h.user || "Sistema"}</span>
+              <span class="timeline-user" style="font-size:11px;">${escapeHtml(h.user || "Sistema")}</span>
               <span class="timeline-date" style="font-size:11px;">${formatDate(h.date)}</span>
             </div>
-            <div class="timeline-body" style="font-size:12.5px;">${h.details}</div>
+            <div class="timeline-body" style="font-size:12.5px;">${escapeHtml(h.details)}</div>
           </div>
         `;
         historyTimeline.appendChild(item);
@@ -158,20 +158,20 @@ export function openAssetDetailModal(id, assets, STATUSES, ASSET_SVGS) {
         item.className = "report-item";
         item.innerHTML = `
           <div class="report-item-header">
-            <span class="report-item-technician">${r.technician}</span>
+            <span class="report-item-technician">${escapeHtml(r.technician)}</span>
             <span>${formatDate(r.date)}</span>
           </div>
           <div class="report-item-block">
             <span class="report-item-label">Diagnóstico de falla</span>
-            <span class="report-item-text">${r.diagnosis}</span>
+            <span class="report-item-text">${escapeHtml(r.diagnosis)}</span>
           </div>
           <div class="report-item-block">
             <span class="report-item-label">Acción técnica y mantenimiento</span>
-            <span class="report-item-text">${r.actionTaken}</span>
+            <span class="report-item-text">${escapeHtml(r.actionTaken)}</span>
           </div>
           <div style="display:flex; justify-content:flex-end; font-size:10px; color:var(--text-muted); gap:12px;">
-            <span>Estado anterior: <strong>${STATUSES[r.statusBefore]?.label || r.statusBefore}</strong></span>
-            <span>Estado posterior: <strong>${STATUSES[r.statusAfter]?.label || r.statusAfter}</strong></span>
+            <span>Estado anterior: <strong>${escapeHtml(STATUSES[r.statusBefore]?.label || r.statusBefore)}</strong></span>
+            <span>Estado posterior: <strong>${escapeHtml(STATUSES[r.statusAfter]?.label || r.statusAfter)}</strong></span>
           </div>
         `;
         reportsList.appendChild(item);
@@ -189,18 +189,13 @@ export function openAssetDetailModal(id, assets, STATUSES, ASSET_SVGS) {
   
   // Restablece la pestaña activa a la línea de tiempo
   document.querySelectorAll(".detail-tab-btn").forEach(btn => {
-    if (btn.getAttribute("data-tab") === "tab-history") {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
+    const selected = btn.getAttribute("data-tab") === "tab-history";
+    btn.classList.toggle("active", selected);
+    btn.setAttribute("aria-selected", String(selected));
+    btn.tabIndex = selected ? 0 : -1;
   });
   document.querySelectorAll(".tab-pane").forEach(pane => {
-    if (pane.id === "tab-history") {
-      pane.classList.add("active");
-    } else {
-      pane.classList.remove("active");
-    }
+    pane.classList.toggle("active", pane.id === "tab-history");
   });
 }
 

@@ -2,7 +2,7 @@
  * Generador de Reportes de Inventy
  */
 
-import { getDepartmentOptions, getStatusInfo, isInSupport } from '../utils.js';
+import { getDepartmentOptions, getStatusInfo, isInSupport, escapeHtml } from '../utils.js';
 import { animateCount, staggerChildren } from '../motion.js';
 
 /**
@@ -54,7 +54,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
       <div class="report-metadata">
         <span><strong>Fecha de Generación:</strong> ${dateStr}</span>
         <span><strong>Hora:</strong> ${timeStr}</span>
-        <span><strong>Generado por:</strong> ${currentUserStr}</span>
+        <span><strong>Generado por:</strong> ${escapeHtml(currentUserStr)}</span>
       </div>
     </div>
   `;
@@ -123,7 +123,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
       
       html += `
         <tr>
-          <td><strong>${dept}</strong></td>
+          <td><strong>${escapeHtml(dept)}</strong></td>
           <td>${dTotal}</td>
           <td>${dActive}</td>
           <td>${dRep}</td>
@@ -146,7 +146,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
     
     html += `
       <h2 class="report-main-title">Inventario Detallado de Bienes</h2>
-      <h3 style="text-align:center; color:var(--text-secondary); margin-bottom: 20px;">Dirección: ${selectedDept}</h3>
+      <h3 style="text-align:center; color:var(--text-secondary); margin-bottom: 20px;">Dirección: ${escapeHtml(selectedDept)}</h3>
       
       <div class="report-grid-summary" style="grid-template-columns: repeat(3, 1fr);">
         <div class="report-summary-box">
@@ -189,12 +189,12 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
         
         html += `
           <tr>
-            <td><strong>${a.nroBien}</strong></td>
-            <td>${a.name}</td>
-            <td>${brand} / ${model}</td>
-            <td><code>${serial}</code></td>
-            <td><span style="color: ${statusInfo.color}">${statusInfo.label}</span></td>
-            <td>${a.description || "-"}</td>
+            <td><strong>${escapeHtml(a.nroBien)}</strong></td>
+            <td>${escapeHtml(a.name)}</td>
+            <td>${escapeHtml(brand)} / ${escapeHtml(model)}</td>
+            <td><code>${escapeHtml(serial)}</code></td>
+            <td><span style="color: ${statusInfo.color}">${escapeHtml(statusInfo.label)}</span></td>
+            <td>${escapeHtml(a.description || "-")}</td>
           </tr>
         `;
       });
@@ -214,7 +214,7 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
     contextDetail = statusInfo.label;
     
     html += `
-      <h2 class="report-main-title">Reporte Especial de Bienes en Estado: ${statusInfo.label}</h2>
+      <h2 class="report-main-title">Reporte Especial de Bienes en Estado: ${escapeHtml(statusInfo.label)}</h2>
       <p style="text-align:center; color:var(--text-muted); margin-bottom: 20px;">Listado de control para soporte técnico, adquisiciones y desincorporación.</p>
       
       <div class="report-table-wrapper">
@@ -241,11 +241,11 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
         
         html += `
           <tr>
-            <td><strong>${a.nroBien}</strong></td>
-            <td>${a.name}</td>
-            <td>${a.department}</td>
-            <td>${specsStr}</td>
-            <td>${diagnosis}</td>
+            <td><strong>${escapeHtml(a.nroBien)}</strong></td>
+            <td>${escapeHtml(a.name)}</td>
+            <td>${escapeHtml(a.department)}</td>
+            <td>${escapeHtml(specsStr)}</td>
+            <td>${escapeHtml(diagnosis)}</td>
           </tr>
         `;
       });
@@ -280,31 +280,41 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
       html += `<tr><td colspan="5" style="text-align:center;">No hay bienes registrados.</td></tr>`;
     } else {
       assets.forEach(a => {
-        // 1. Especifaciones técnicas
+        const specsData = a.technicalSpecs || {};
+
+        // 1. Especificaciones técnicas
         const specs = [];
-        if (a.brand) specs.push(a.brand);
-        if (a.model) specs.push(a.model);
-        if (a.processor) specs.push(a.processor);
-        if (a.ram) specs.push(`RAM: ${a.ram}`);
-        if (a.storage) specs.push(`Alm: ${a.storage}`);
+        if (specsData.brand) specs.push(specsData.brand);
+        if (specsData.model) specs.push(specsData.model);
+        if (specsData.processor) specs.push(specsData.processor);
+        if (specsData.ram) specs.push(`RAM: ${specsData.ram}`);
+        if (specsData.storage) specs.push(`Alm: ${specsData.storage}`);
         const specsStr = specs.length > 0 ? specs.join(" | ") : "Sin especificaciones registradas";
 
-        // 2. Determinar condición
-        let conditionLabel = "Óptimo";
+        // 2. Determinar condición: primero el estado operativo, luego la
+        // condición registrada del bien y, solo como respaldo, la descripción.
+        const conditionKey = String(a.condition || "").toLowerCase();
+        let conditionLabel = "Bueno (Operativo)";
         let conditionColor = "var(--success)";
-        
+
         if (a.status === "desincorporado") {
           conditionLabel = "Obsoleto (Fuera de Servicio)";
           conditionColor = "var(--danger)";
-        } else if (a.status === "reparacion") {
-          conditionLabel = "Defectuoso (Mejorable)";
+        } else if (a.status === "reparacion" || a.status === "espera_repuesto") {
+          conditionLabel = "Defectuoso (En reparación)";
           conditionColor = "var(--warning)";
-        } else {
+        } else if (conditionKey === "obsoleto") {
+          conditionLabel = "Obsoleto (En uso)";
+          conditionColor = "var(--danger)";
+        } else if (conditionKey === "mejorable") {
+          conditionLabel = "Mejorable (Operativo)";
+          conditionColor = "var(--warning)";
+        } else if (!conditionKey) {
           const lowerDesc = (a.description || "").toLowerCase();
           if (lowerDesc.includes("obsoleto") || lowerDesc.includes("viejo") || lowerDesc.includes("desgaste")) {
             conditionLabel = "Obsoleto (En uso)";
             conditionColor = "var(--danger)";
-          } else if (lowerDesc.includes("lento") || lowerDesc.includes("actualizar") || lowerDesc.includes("limpieza") || (a.ram && (a.ram.includes("4 GB") || a.ram.includes("2 GB")))) {
+          } else if (lowerDesc.includes("lento") || lowerDesc.includes("actualizar") || lowerDesc.includes("limpieza") || (specsData.ram && (specsData.ram.includes("4 GB") || specsData.ram.includes("2 GB")))) {
             conditionLabel = "Mejorable (Operativo)";
             conditionColor = "var(--warning)";
           }
@@ -312,12 +322,12 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
 
         // 3. Determinar observaciones/defectos
         let observations = "Operando en condiciones normales sin fallas reportadas.";
-        if (a.status === "reparacion" || a.status === "desincorporado") {
+        if (a.status === "reparacion" || a.status === "espera_repuesto" || a.status === "desincorporado") {
           const lastReport = a.reports && a.reports.length > 0 ? a.reports[a.reports.length - 1] : null;
           if (lastReport) {
-            observations = `<strong>Diagnóstico técnico:</strong> ${lastReport.diagnosis}`;
+            observations = `<strong>Diagnóstico técnico:</strong> ${escapeHtml(lastReport.diagnosis)}`;
           } else if (a.description) {
-            observations = `<strong>Detalles del reporte:</strong> ${a.description}`;
+            observations = `<strong>Detalles del reporte:</strong> ${escapeHtml(a.description)}`;
           } else {
             observations = "Equipo en revisión técnica por falla no detallada.";
           }
@@ -325,12 +335,12 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
 
         html += `
           <tr>
-            <td><strong>${a.nroBien}</strong></td>
+            <td><strong>${escapeHtml(a.nroBien)}</strong></td>
             <td>
-              <div style="font-weight:600; color:var(--text-primary);">${a.name}</div>
-              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">${specsStr}</div>
+              <div style="font-weight:600; color:var(--text-primary);">${escapeHtml(a.name)}</div>
+              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">${escapeHtml(specsStr)}</div>
             </td>
-            <td>${a.department}</td>
+            <td>${escapeHtml(a.department)}</td>
             <td>
               <span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; color:${conditionColor}">
                 <span style="width:8px; height:8px; border-radius:50%; background-color:${conditionColor}"></span>
@@ -383,6 +393,6 @@ export function generateReport(assets, STATUSES, DEPARTMENTS) {
   // Actualiza el contexto del selector de informes
   const contextText = document.querySelector("#report-context span");
   if (contextText) {
-    contextText.innerHTML = `${contextLabel} · <strong>${contextDetail}</strong>`;
+    contextText.innerHTML = `${escapeHtml(contextLabel)} · <strong>${escapeHtml(contextDetail)}</strong>`;
   }
 }

@@ -1,5 +1,5 @@
 import { renderDonutChart, renderDepartmentChart, renderTypeDistribution } from '../charts.js';
-import { formatDate, isInSupport } from '../utils.js';
+import { formatDate, isInSupport, escapeAttr, escapeHtml } from '../utils.js';
 import { animateCount } from '../motion.js';
 
 /**
@@ -82,14 +82,14 @@ export function renderRecentActivity(assets) {
     }
     
     item.innerHTML = `
-      <div class="activity-type-icon ${activity.type}">
+      <div class="activity-type-icon ${escapeAttr(activity.type)}">
         ${icon}
       </div>
       <div class="activity-details">
-        <div class="activity-title">${activity.assetName} (${activity.assetNro})</div>
-        <div class="activity-desc">${activity.details}</div>
+        <div class="activity-title">${escapeHtml(activity.assetName)} (${escapeHtml(activity.assetNro)})</div>
+        <div class="activity-desc">${escapeHtml(activity.details)}</div>
         <div class="activity-meta">
-          <span>Realizado por: ${activity.user || "Sistema"}</span>
+          <span>Realizado por: ${escapeHtml(activity.user || "Sistema")}</span>
           <span>${formatDate(activity.date)}</span>
         </div>
       </div>

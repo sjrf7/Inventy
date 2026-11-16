@@ -1,5 +1,5 @@
 import { enhanceSelectWithSearch } from '../components/searchableSelect.js';
-import { getStatusInfo, isInSupport } from '../utils.js';
+import { getStatusInfo, isInSupport, escapeAttr, escapeHtml } from '../utils.js';
 
 /**
  * Configura y rellena los campos de entrada de la vista de soporte técnico.
@@ -12,7 +12,7 @@ export function setupSupportView(assets, STATUSES) {
   
   if (!supportSelect) return;
   
-  supportSelect.innerHTML = '<option value="">Seleccione equipo bajo atención...</option>';
+  supportSelect.innerHTML = '<option value="">Seleccione equipo bajo atención…</option>';
   
   assets.forEach(asset => {
     const option = document.createElement("option");
@@ -69,20 +69,20 @@ export function renderPendingSupportList(assets, STATUSES) {
     
     card.innerHTML = `
       <div class="issue-header">
-        <span class="issue-asset-nro status-${asset.status}">
-          ${statusInfo.label}
+        <span class="issue-asset-nro ${escapeAttr(`status-${asset.status}`)}">
+          ${escapeHtml(statusInfo.label)}
         </span>
-        <span style="font-size:12px; font-weight:700; color:var(--text-muted);">${asset.nroBien}</span>
+        <span style="font-size:12px; font-weight:700; color:var(--text-muted);">${escapeHtml(asset.nroBien)}</span>
       </div>
       <div>
-        <h4 class="issue-title">${asset.name}</h4>
+        <h4 class="issue-title">${escapeHtml(asset.name)}</h4>
         <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
-          <strong>Falla:</strong> ${lastDiagnosis}
+          <strong>Falla:</strong> ${escapeHtml(lastDiagnosis)}
         </p>
       </div>
       <div class="issue-meta">
-        <span>Ubicación: ${asset.department}</span>
-        <button class="btn btn-primary btn-sm btn-solve-issue" data-id="${asset.id}">Atender / Resolver</button>
+        <span>Ubicación: ${escapeHtml(asset.department)}</span>
+        <button class="btn btn-primary btn-sm btn-solve-issue" data-id="${escapeAttr(asset.id)}">Atender / Resolver</button>
       </div>
     `;
     

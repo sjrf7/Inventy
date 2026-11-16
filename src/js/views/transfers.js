@@ -1,4 +1,4 @@
-import { formatDate, getLocalISOTime } from '../utils.js';
+import { formatDate, getLocalISOTime, escapeHtml } from '../utils.js';
 import { enhanceSelectWithSearch } from '../components/searchableSelect.js';
 import { STATUSES } from '../../../seed-data.js';
 
@@ -17,7 +17,7 @@ export function setupTransfersView(assets, DEPARTMENTS) {
   if (!transferSelect || !destSelect || !dateInput) return;
 
   // Rellena el desplegable de selección de equipos
-  transferSelect.innerHTML = '<option value="">Seleccione un equipo...</option>';
+  transferSelect.innerHTML = '<option value="">Seleccione un equipo…</option>';
   assets.filter(a => a.status !== "desincorporado").forEach(asset => {
     const option = document.createElement("option");
     option.value = asset.id;
@@ -29,7 +29,7 @@ export function setupTransfersView(assets, DEPARTMENTS) {
   enhanceSelectWithSearch(transferSelect, assets, STATUSES);
   
   // Rellena las direcciones de destino
-  destSelect.innerHTML = '<option value="">Seleccione destino...</option>';
+  destSelect.innerHTML = '<option value="">Seleccione destino…</option>';
   DEPARTMENTS.forEach(dept => {
     const option = document.createElement("option");
     option.value = dept;
@@ -41,8 +41,10 @@ export function setupTransfersView(assets, DEPARTMENTS) {
   if (previewBox) previewBox.style.display = "none";
   if (originInput) originInput.value = "";
   
-  // Establece la fecha actual (aaaa-mm-ddThh:mm)
-  dateInput.value = getLocalISOTime();
+  // Establece la fecha actual (aaaa-mm-ddThh:mm) sin pisar una fecha ya escrita
+  if (!dateInput.value) {
+    dateInput.value = getLocalISOTime();
+  }
   
   // Renderiza la línea de tiempo
   renderTransfersTimeline(assets);
@@ -90,11 +92,11 @@ export function renderTransfersTimeline(assets) {
       <div class="timeline-dot traspaso"></div>
       <div class="timeline-content">
         <div class="timeline-header">
-          <span class="timeline-user">Autorizado por: ${t.user}</span>
+          <span class="timeline-user">Autorizado por: ${escapeHtml(t.user)}</span>
           <span class="timeline-date">${formatDate(t.date)}</span>
         </div>
         <div class="timeline-body">
-          <strong>${t.assetName} (${t.assetNro})</strong>: ${t.details}
+          <strong>${escapeHtml(t.assetName)} (${escapeHtml(t.assetNro)})</strong>: ${escapeHtml(t.details)}
         </div>
       </div>
     `;
