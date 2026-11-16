@@ -184,7 +184,7 @@ function populateFilterSelects() {
   
   if (filterDept && formDept && reportDept) {
     filterDept.innerHTML = '<option value="">Todas las Direcciones</option>';
-    formDept.innerHTML = '<option value="">Seleccione Dirección...</option>';
+    formDept.innerHTML = '<option value="">Seleccione Dirección…</option>';
     reportDept.innerHTML = '';
     
     getDepartments().forEach(dept => {
@@ -772,7 +772,7 @@ async function handleAssetFormSubmit() {
         date: new Date().toISOString(),
         type: status === "desincorporado" ? "desincorporacion" : "cambio_estado",
         user: `${currentUser} (Soporte)`,
-        details: `Cambio manual de estado de '${STATUSES[oldStatus]?.label || oldStatus}' a '${STATUSES[status]?.label || status}'.`
+        details: `Cambio manual de estado de “${STATUSES[oldStatus]?.label || oldStatus}” a “${STATUSES[status]?.label || status}”.`
       });
       updated.history = history;
     }
@@ -795,7 +795,7 @@ async function handleAssetFormSubmit() {
         date: new Date().toISOString(),
         type: "traspaso",
         user: `${currentUser} (Soporte)`,
-        details: `Reubicación del equipo de '${oldDept}' a '${department}' vía edición de ficha.`
+        details: `Reubicación del equipo de “${oldDept}” a “${department}” vía edición de ficha.`
       });
       updated.history = history;
     }
@@ -861,7 +861,7 @@ function handleTransferSubmit() {
     date: transferDate,
     type: "traspaso",
     user: authorizedBy,
-    details: `Traspaso autorizado de '${originDept}' a '${destDept}'. Motivo: ${reason}`
+    details: `Traspaso autorizado de “${originDept}” a “${destDept}”. Motivo: ${reason}`
   });
   
   updateAsset(assetId, {
@@ -927,7 +927,7 @@ async function handleSupportSubmit() {
     date: reportDate,
     type: "mantenimiento",
     user: technician,
-    details: `Informe Técnico. Falla: "${diagnosis}". Acción: "${action}". Estado final: ${STATUSES[statusAfter]?.label || statusAfter}.`
+    details: `Informe Técnico. Falla: “${diagnosis}”. Acción: “${action}”. Estado final: ${STATUSES[statusAfter]?.label || statusAfter}.`
   });
   
   updateAsset(assetId, {
