@@ -1,11 +1,36 @@
 /* Anulaciones específicas para la impresión */
+@page {
+  margin: 14mm;
+}
+
 @media print {
   body {
     background-color: white !important;
     color: black !important;
   }
-  .sidebar, .top-header, .reports-selector-card, ::-webkit-scrollbar {
+  .sidebar,
+  .top-header,
+  .report-section-title,
+  .report-cards-grid,
+  .reports-selector-card,
+  .reports-controls,
+  .report-preview-actions,
+  .skip-link,
+  .btn,
+  .theme-toggle-btn,
+  .mobile-menu-btn,
+  .modal-overlay,
+  .sidebar-scrim,
+  .searchable-select-dropdown,
+  ::-webkit-scrollbar {
     display: none !important;
+  }
+  /* Solo se imprime el informe; el resto de vistas y controles no se filtran */
+  .view-panel {
+    display: none !important;
+  }
+  #view-reports {
+    display: block !important;
   }
   .main-content {
     margin-left: 0 !important;
@@ -18,6 +43,15 @@
     padding: 0 !important;
     background: transparent !important;
   }
+  /* El informe usa variables del tema oscuro; en papel debe ir en tinta oscura */
+  .report-preview-panel,
+  .report-preview-panel * {
+    color: #111111 !important;
+  }
+  .report-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
   .report-table th {
     background-color: #f1f5f9 !important;
     color: black !important;
@@ -29,5 +63,9 @@
   }
   .report-summary-box {
     border: 1px solid black !important;
+  }
+  .report-table tr,
+  .report-summary-box {
+    break-inside: avoid;
   }
 }
