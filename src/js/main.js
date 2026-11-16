@@ -124,10 +124,6 @@ function renderView(viewName) {
   } else if (viewName === "reports") {
     generateReport(assets, STATUSES, DEPARTMENTS);
   }
-
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
 }
 
 /**
