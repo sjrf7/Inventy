@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap">
   <meta name="theme-color" content="#0A0C12">
-  <link rel="stylesheet" href="src/css/variables.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/base.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/components.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/views.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/login.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/motion.css?v=1.2.5">
-  <link rel="stylesheet" href="src/css/print.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/base.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/components.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/views.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/login.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/motion.css?v=1.2.6">
+  <link rel="stylesheet" href="src/css/print.css?v=1.2.6">
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 </head>
@@ -558,7 +558,7 @@
         <div class="calendar-view">
           <div class="calendar-toolbar">
             <div class="calendar-toolbar-group">
-              <div class="calendar-year-switch" role="group" aria-label="Cambiar el año del cronograma">
+              <div class="calendar-year-switch" role="group" aria-label="Cambiar el periodo del cronograma">
                 <button type="button" class="calendar-icon-btn" id="calendar-prev-year" aria-label="Ver el año anterior">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polyline points="15 18 9 12 15 6" />
@@ -583,6 +583,10 @@
 
             <div class="calendar-toolbar-group">
               <span class="calendar-status" id="calendar-status" role="status" aria-live="polite"></span>
+              <div class="calendar-view-switch" role="group" aria-label="Cambiar entre vista mensual y anual">
+                <button type="button" data-calendar-view="month" aria-pressed="true" aria-controls="calendar-months">Mes</button>
+                <button type="button" data-calendar-view="year" aria-pressed="false" aria-controls="calendar-months">Año</button>
+              </div>
               <button type="button" class="btn btn-primary" id="btn-calendar-new">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -1008,6 +1012,6 @@
   </div>
   
   <!-- Scripts -->
-  <script type="module" src="src/js/main.js?v=1.2.5"></script>
+  <script type="module" src="src/js/main.js?v=1.2.6"></script>
 </body>
 </html>

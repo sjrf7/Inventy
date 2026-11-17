@@ -67,8 +67,9 @@ INVENTY_BASE_URL=http://192.168.0.200:8000 npm run test:e2e
 - Impresión: solo el informe, ocultando la interfaz y con tinta oscura.
 - Tema claro/oscuro, `aria-pressed` y `theme-color`.
 - Soporte y traspasos: formularios y combobox accesibles.
-- Calendario: 12 meses, día seleccionado, filtros, teclado y CRUD de un
-  mantenimiento temporal (crear, completar y eliminar).
+- Calendario: vista mensual por defecto con eventos rotulados, conmutador
+  anual, navegación mes a mes (incluido el salto de año), filtros, teclado y
+  CRUD de un mantenimiento temporal (crear, completar y eliminar).
 - Formulario de bienes: cierre directo sin cambios, confirmación al descartar
   (botón, Escape y clic en el fondo).
 - Confirmación al desincorporar desde la ficha y desde soporte.

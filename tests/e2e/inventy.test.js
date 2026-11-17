@@ -7,8 +7,9 @@
  *   npm run serve:test   # en otra terminal (CAPTCHA desactivado para tests)
  *   npm run test:e2e
  *
- * Las pruebas solo inician sesión, navegan y abren formularios; no guardan
- * cambios en la base de datos.
+ * Las pruebas no alteran el inventario: abren formularios y cancelan las
+ * escrituras. El caso del calendario crea un evento temporal y lo elimina al
+ * terminar.
  */
 
 const { test, before, after } = require('node:test');
@@ -470,11 +471,38 @@ test('Desincorporar desde soporte pide confirmación y no guarda si se cancela',
 /* Calendario de mantenimiento                                                */
 /* -------------------------------------------------------------------------- */
 
-test('El calendario muestra los 12 meses y el detalle del día', async () => {
+/**
+ * Fija la vista del calendario antes de una comprobación.
+ * @param {'month'|'year'} view
+ */
+async function setCalendarView(view) {
+  const button = page.locator(`[data-calendar-view="${view}"]`);
+  if ((await button.getAttribute('aria-pressed')) !== 'true') {
+    await button.click();
+    await page.waitForTimeout(320);
+  }
+}
+
+/** Devuelve el texto de la etiqueta de periodo del calendario. */
+async function calendarPeriodLabel() {
+  return (await page.locator('#calendar-year-label').textContent()).trim();
+}
+
+test('El calendario abre en vista mensual y conserva la anual', async () => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoView(page, 'calendario');
   await page.waitForSelector('.calendar-month', { timeout: 8000 });
 
+  // La vista de trabajo es la mensual: un solo mes con los eventos rotulados.
+  await setCalendarView('month');
+  assert.equal(await page.locator('.calendar-month.is-detailed').count(), 1);
+  assert.equal(await page.locator('[data-calendar-view="month"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('.calendar-weekdays.is-detailed span').count(), 7);
+  assert.ok(await page.locator('.calendar-chip').count() >= 1);
+  assert.match(await calendarPeriodLabel(), /2026/);
+
+  // El conmutador devuelve la retícula anual completa.
+  await setCalendarView('year');
   assert.equal(await page.locator('.calendar-month').count(), 12);
   assert.equal((await page.locator('.calendar-month-name').first().textContent()).trim(), 'Enero');
   assert.equal(await page.locator('.nav-item.active').getAttribute('data-view'), 'calendar');
@@ -495,10 +523,12 @@ test('El calendario muestra los 12 meses y el detalle del día', async () => {
     1
   );
 
+  // El filtro también se refleja en las fichas de la vista mensual.
   await page.click('[data-calendar-filter="correctivo"]');
   assert.equal(await page.locator('[data-calendar-filter="correctivo"]').getAttribute('aria-pressed'), 'true');
-  assert.equal(await page.locator('.calendar-day-dot.is-preventivo').count(), 0);
-  assert.ok(await page.locator('.calendar-day-dot.is-correctivo').count() > 0);
+  await setCalendarView('month');
+  assert.equal(await page.locator('.calendar-chip.is-preventivo').count(), 0);
+  assert.ok(await page.locator('.calendar-chip.is-correctivo').count() > 0);
 
   await page.click('[data-calendar-filter="todos"]');
 });
@@ -506,17 +536,73 @@ test('El calendario muestra los 12 meses y el detalle del día', async () => {
 test('El calendario se recorre con las flechas del teclado', async () => {
   await gotoView(page, 'calendario');
   await page.waitForSelector('.calendar-month', { timeout: 8000 });
+  await setCalendarView('month');
 
   const origin = page.locator('.calendar-day[data-date="2026-11-16"]');
   await origin.focus();
   await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(180);
+  await page.waitForTimeout(220);
 
   assert.equal(await page.locator('.calendar-day.is-selected').getAttribute('data-date'), '2026-11-17');
   assert.equal(
     await page.evaluate(() => document.activeElement?.getAttribute('data-date')),
     '2026-11-17'
   );
+
+  // Al cruzar el borde del mes, la vista mensual muestra el mes anterior.
+  await page.locator('.calendar-day[data-date="2026-11-01"]').focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(320);
+
+  assert.match(await calendarPeriodLabel(), /Octubre 2026/);
+  assert.equal(await page.locator('.calendar-day.is-selected').getAttribute('data-date'), '2026-10-31');
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.getAttribute('data-date')),
+    '2026-10-31'
+  );
+});
+
+test('La vista mensual avanza, retrocede y cruza el año', async () => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoView(page, 'calendario');
+  await page.waitForSelector('.calendar-month', { timeout: 8000 });
+  await setCalendarView('month');
+
+  // Parte de hoy para que la comprobación no dependa del test anterior.
+  await page.click('#calendar-today');
+  await page.waitForTimeout(320);
+
+  assert.match(await calendarPeriodLabel(), /Noviembre 2026/);
+
+  // Avanza conservando el día seleccionado.
+  await page.click('#calendar-next-year');
+  await page.waitForTimeout(320);
+  assert.match(await calendarPeriodLabel(), /Diciembre 2026/);
+  assert.equal(await page.locator('.calendar-day.is-selected').getAttribute('data-date'), '2026-12-16');
+  assert.ok(await page.locator('.calendar-chip').count() > 0);
+
+  // Cruza el año y muestra el estado vacío del mes sin eventos.
+  await page.click('#calendar-next-year');
+  await page.waitForTimeout(500);
+  assert.match(await calendarPeriodLabel(), /Enero 2027/);
+  assert.equal(await page.locator('.calendar-day.is-selected').getAttribute('data-date'), '2027-01-16');
+  assert.equal(await page.locator('.calendar-chip').count(), 0);
+  assert.match((await page.locator('.calendar-month-note').textContent()).trim(), /Sin mantenimientos programados/);
+
+  // Retrocede de nuevo a 2026 y abre un día con intervención.
+  await page.click('#calendar-prev-year');
+  await page.waitForTimeout(500);
+  await page.click('#calendar-prev-year');
+  await page.waitForTimeout(320);
+  assert.match(await calendarPeriodLabel(), /Noviembre 2026/);
+
+  const day = page.locator('.calendar-day[data-date="2026-11-08"]');
+  await day.click();
+  await page.waitForTimeout(220);
+
+  assert.match((await page.locator('#calendar-day-title').textContent()).trim(), /8 de noviembre/);
+  assert.equal(await page.locator('.calendar-day[data-date="2026-11-08"] .calendar-chip').count(), 1);
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-date')), '2026-11-08');
 });
 
 test('El calendario programa, completa y elimina un mantenimiento', async () => {
@@ -527,6 +613,7 @@ test('El calendario programa, completa y elimina un mantenimiento', async () => 
     await page.setViewportSize({ width: 1440, height: 900 });
     await gotoView(page, 'calendario');
     await page.waitForSelector('.calendar-month', { timeout: 8000 });
+    await setCalendarView('year');
 
     await page.locator(`.calendar-day[data-date="${date}"]`).click();
     await page.waitForTimeout(180);
@@ -546,11 +633,24 @@ test('El calendario programa, completa y elimina un mantenimiento', async () => 
     assert.equal(await card.count(), 1);
     assert.equal((await page.locator('#calendar-status').textContent()).trim(), 'Mantenimiento programado.');
 
+    // La vista mensual refleja el evento recién creado en su día.
+    await setCalendarView('month');
+    assert.match(await calendarPeriodLabel(), /Marzo 2026/);
+    assert.equal(
+      await page.locator('.calendar-day[data-date="2026-03-03"] .calendar-chip').filter({ hasText: title }).count(),
+      1
+    );
+
     // Completar desde la tarjeta del día.
     await card.locator('[data-action="toggle"]').click();
     await page.waitForTimeout(650);
     card = page.locator('.calendar-event', { hasText: title });
     assert.equal(await card.locator('.calendar-status-badge.is-completado').count(), 1);
+    assert.equal(
+      await page.locator('.calendar-day[data-date="2026-03-03"] .calendar-chip.is-status-completado')
+        .filter({ hasText: title }).count(),
+      1
+    );
 
     // Eliminar con confirmación.
     await card.locator('[data-action="delete"]').click();
@@ -560,6 +660,10 @@ test('El calendario programa, completa y elimina un mantenimiento', async () => 
         .some((element) => element.textContent.trim() === eventTitle),
       title,
       { timeout: 5000 }
+    );
+    assert.equal(
+      await page.locator('.calendar-chip').filter({ hasText: title }).count(),
+      0
     );
   } finally {
     // Limpieza defensiva si una aserción falla antes de borrar desde la interfaz.
@@ -583,7 +687,19 @@ test('No hay desbordamiento horizontal en anchos habituales', async () => {
     await page.setViewportSize({ width, height: 900 });
     for (const view of ['dashboard', 'inventario', 'calendario', 'reportes']) {
       await gotoView(page, view);
-      if (view === 'calendario') await page.waitForSelector('.calendar-month', { timeout: 8000 });
+
+      if (view === 'calendario') {
+        await page.waitForSelector('.calendar-month', { timeout: 8000 });
+        for (const mode of ['month', 'year']) {
+          await setCalendarView(mode);
+          const overflow = await page.evaluate(
+            () => document.documentElement.scrollWidth - window.innerWidth
+          );
+          assert.ok(overflow <= 1, `${width}px / calendario ${mode}: exceso de ${overflow}px`);
+        }
+        continue;
+      }
+
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - window.innerWidth
       );

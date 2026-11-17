@@ -23,6 +23,11 @@ const WEEKDAY_NAMES = [
 // Semana que empieza en lunes, como se usa en el calendario laboral local.
 const WEEKDAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
+// Etiquetas breves para la cabecera de la vista mensual.
+const WEEKDAY_BRIEF = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+const VIEW_STORAGE_KEY = 'inventy_calendar_view';
+
 const TYPE_LABELS = {
   preventivo: 'Preventivo',
   correctivo: 'Correctivo'
@@ -55,6 +60,7 @@ const state = {
   initialized: false,
   year: new Date().getFullYear(),
   selectedDate: toISODate(new Date()),
+  view: readViewPreference(),
   filter: 'todos',
   events: [],
   loading: false,
@@ -64,6 +70,7 @@ const state = {
 
 let loadToken = 0;
 let statusTimer = null;
+let pendingFocusDate = null;
 
 /* -------------------------------------------------------------------------- */
 /* Utilidades de fecha y texto                                                */
@@ -89,6 +96,33 @@ function toISODate(date) {
 function parseISODate(value) {
   const [year, month, day] = String(value).split('-').map(Number);
   return new Date(year, (month || 1) - 1, day || 1);
+}
+
+/**
+ * Recupera la vista preferida del calendario. La mensual es la vista de
+ * trabajo por defecto; la anual queda a un clic y la elección se conserva.
+ * @returns {'month'|'year'}
+ */
+function readViewPreference() {
+  try {
+    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (stored === 'month' || stored === 'year') return stored;
+  } catch (error) {
+    // Sin almacenamiento disponible se usa la vista mensual.
+  }
+  return 'month';
+}
+
+/**
+ * Guarda la vista elegida para las próximas visitas.
+ * @param {'month'|'year'} view
+ */
+function saveViewPreference(view) {
+  try {
+    localStorage.setItem(VIEW_STORAGE_KEY, view);
+  } catch (error) {
+    // La preferencia es opcional.
+  }
 }
 
 /**
@@ -166,6 +200,7 @@ export function setupCalendarView(assets = []) {
   }
 
   populateAssetOptions();
+  applyViewButtons();
 
   if (!state.initialized) {
     state.initialized = true;
@@ -180,7 +215,60 @@ export function setupCalendarView(assets = []) {
 }
 
 function updateYearLabel() {
-  setText('calendar-year-label', state.year);
+  const isMonth = state.view === 'month';
+  const monthIndex = parseISODate(state.selectedDate).getMonth();
+  const labelElement = document.getElementById('calendar-year-label');
+
+  if (labelElement) {
+    labelElement.textContent = isMonth
+      ? `${MONTH_NAMES[monthIndex]} ${state.year}`
+      : String(state.year);
+    labelElement.classList.toggle('is-month', isMonth);
+  }
+
+  const prevButton = document.getElementById('calendar-prev-year');
+  const nextButton = document.getElementById('calendar-next-year');
+  const prevLabel = isMonth ? 'Ver el mes anterior' : 'Ver el año anterior';
+  const nextLabel = isMonth ? 'Ver el mes siguiente' : 'Ver el año siguiente';
+
+  if (prevButton) {
+    prevButton.setAttribute('aria-label', prevLabel);
+    prevButton.title = prevLabel;
+  }
+
+  if (nextButton) {
+    nextButton.setAttribute('aria-label', nextLabel);
+    nextButton.title = nextLabel;
+  }
+}
+
+/**
+ * Sincroniza el conmutador Mes/Año con el estado de la vista.
+ */
+function applyViewButtons() {
+  document.querySelectorAll('[data-calendar-view]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.calendarView === state.view));
+  });
+
+  const months = document.getElementById('calendar-months');
+  if (months) months.classList.toggle('is-month-view', state.view === 'month');
+
+  const layout = document.querySelector('.calendar-layout');
+  if (layout) layout.classList.toggle('is-month-layout', state.view === 'month');
+}
+
+/**
+ * Devuelve el foco a una celda concreta tras una navegación con teclado.
+ */
+function applyPendingFocus() {
+  if (!pendingFocusDate || state.loading || state.error) return;
+
+  const container = document.getElementById('calendar-months');
+  const cell = container?.querySelector(`[data-date="${pendingFocusDate}"]`);
+  if (!cell) return;
+
+  pendingFocusDate = null;
+  cell.focus();
 }
 
 function renderCalendar() {
@@ -189,6 +277,7 @@ function renderCalendar() {
   const monthsElement = document.getElementById('calendar-months');
   if (monthsElement) {
     monthsElement.setAttribute('aria-busy', state.loading ? 'true' : 'false');
+    monthsElement.dataset.view = state.view;
   }
 
   if (state.loading) {
@@ -204,8 +293,13 @@ function renderCalendar() {
   }
 
   renderMetrics();
-  renderMonths();
+  if (state.view === 'month') {
+    renderMonth();
+  } else {
+    renderMonths();
+  }
   renderDayPanel();
+  applyPendingFocus();
 }
 
 function renderMetrics() {
@@ -272,102 +366,239 @@ function renderErrorState() {
   }
 }
 
+/**
+ * Agrupa los eventos por fecha para dibujar la retícula en una sola pasada.
+ * @param {Array} events
+ * @returns {Map<string, Array>}
+ */
+function groupEventsByDate(events) {
+  const map = new Map();
+
+  events.forEach(event => {
+    if (!event.date) return;
+    const list = map.get(event.date) || [];
+    list.push(event);
+    map.set(event.date, list);
+  });
+
+  return map;
+}
+
+/**
+ * Construye la etiqueta accesible de un día. La vista mensual añade el
+ * resumen de las intervenciones visibles en la celda.
+ * @returns {string}
+ */
+function buildDayLabel({ date, dayEvents, isToday, monthIndex, detailed }) {
+  let label = `${WEEKDAY_NAMES[date.getDay()].toLowerCase()} ${date.getDate()} de ${MONTH_NAMES[monthIndex].toLowerCase()} de ${state.year}`;
+
+  if (!dayEvents.length) {
+    label += '. Sin mantenimientos';
+  } else if (detailed) {
+    const parts = dayEvents.slice(0, 3).map(event => {
+      const time = event.time ? `${event.time}, ` : '';
+      return `${time}${event.title} (${typeLabel(event.type).toLowerCase()}, ${statusLabel(event.status).toLowerCase()})`;
+    });
+    if (dayEvents.length > 3) parts.push(`y ${dayEvents.length - 3} más`);
+    label += `. ${dayEvents.length} ${plural(dayEvents.length, 'mantenimiento', 'mantenimientos')}: ${parts.join('; ')}`;
+  } else {
+    const preventivos = dayEvents.filter(event => event.type === 'preventivo').length;
+    const correctivos = dayEvents.filter(event => event.type === 'correctivo').length;
+    const details = [];
+    if (preventivos) details.push(`${preventivos} ${plural(preventivos, 'preventivo', 'preventivos')}`);
+    if (correctivos) details.push(`${correctivos} ${plural(correctivos, 'correctivo', 'correctivos')}`);
+    label += `. ${dayEvents.length} ${plural(dayEvents.length, 'mantenimiento', 'mantenimientos')}: ${details.join(' y ')}`;
+  }
+
+  if (isToday) label += '. Hoy';
+  return label;
+}
+
+/**
+ * Dibuja una celda de día. En la vista anual usa puntos de tipo; en la
+ * mensual muestra fichas con hora y título, limitadas a tres por día.
+ * @returns {string}
+ */
+function renderDayCell({ dateString, dayNumber, date, dayEvents, isToday, isSelected, monthIndex, detailed }) {
+  const classes = ['calendar-day'];
+  if (detailed) classes.push('is-detailed');
+  if (dayEvents.length) classes.push('has-events');
+  if (isToday) classes.push('is-today');
+  if (isSelected) classes.push('is-selected');
+
+  const label = buildDayLabel({ date, dayEvents, isToday, monthIndex, detailed });
+  const pressed = isSelected ? 'true' : 'false';
+  const current = isToday ? 'aria-current="date"' : '';
+
+  if (!detailed) {
+    const dots = dayEvents.slice(0, 3).map(event => {
+      const done = isClosedStatus(event.status) ? ' is-done' : '';
+      return `<span class="calendar-day-dot is-${escapeAttr(event.type)}${done}"></span>`;
+    }).join('');
+
+    return `
+      <button type="button" class="${classes.join(' ')}" data-date="${dateString}"
+        aria-pressed="${pressed}" ${current} aria-label="${escapeAttr(label)}">
+        <span class="calendar-day-number">${dayNumber}</span>
+        <span class="calendar-day-dots" aria-hidden="true">${dots}</span>
+      </button>
+    `;
+  }
+
+  const chips = dayEvents.slice(0, 3).map(event => {
+    const time = event.time
+      ? `<span class="calendar-chip-time">${escapeHtml(event.time)}</span>`
+      : '';
+
+    return `
+      <span class="calendar-chip is-${escapeAttr(event.type)} is-status-${escapeAttr(event.status)}">
+        <span class="calendar-chip-dot" aria-hidden="true"></span>
+        ${time}
+        <span class="calendar-chip-title">${escapeHtml(event.title)}</span>
+      </span>
+    `;
+  }).join('');
+
+  const more = dayEvents.length > 3
+    ? `<span class="calendar-chip-more">+${dayEvents.length - 3} más</span>`
+    : '';
+
+  return `
+    <button type="button" class="${classes.join(' ')}" data-date="${dateString}"
+      aria-pressed="${pressed}" ${current} aria-label="${escapeAttr(label)}">
+      <span class="calendar-day-top">
+        <span class="calendar-day-number">${dayNumber}</span>
+        ${isToday ? '<span class="calendar-today-flag" aria-hidden="true">Hoy</span>' : ''}
+      </span>
+      <span class="calendar-day-events" aria-hidden="true">${chips}${more}</span>
+    </button>
+  `;
+}
+
+/**
+ * Dibuja el bloque de un mes. La vista anual usa seis semanas fijas para que
+ * todos los meses midan igual; la mensual ajusta las filas al contenido.
+ * @returns {string}
+ */
+function renderMonthSection(monthIndex, monthEvents, eventsByDate, detailed) {
+  const firstDay = new Date(state.year, monthIndex, 1);
+  const leadingBlanks = (firstDay.getDay() + 6) % 7; // Lunes = 0
+  const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
+  const totalCells = detailed
+    ? Math.ceil((leadingBlanks + daysInMonth) / 7) * 7
+    : 42;
+  const today = toISODate(new Date());
+
+  let daysHtml = '';
+
+  for (let cell = 0; cell < totalCells; cell++) {
+    const dayNumber = cell - leadingBlanks + 1;
+
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      daysHtml += `<span class="calendar-day is-blank${detailed ? ' is-detailed' : ''}" aria-hidden="true"></span>`;
+      continue;
+    }
+
+    const date = new Date(state.year, monthIndex, dayNumber);
+    const dateString = toISODate(date);
+
+    daysHtml += renderDayCell({
+      dateString,
+      dayNumber,
+      date,
+      dayEvents: eventsByDate.get(dateString) || [],
+      isToday: dateString === today,
+      isSelected: dateString === state.selectedDate,
+      monthIndex,
+      detailed
+    });
+  }
+
+  const heading = detailed ? `${MONTH_NAMES[monthIndex]} ${state.year}` : MONTH_NAMES[monthIndex];
+  const weekdays = detailed ? WEEKDAY_BRIEF : WEEKDAY_LETTERS;
+  const countTitle = `${monthEvents.length} ${plural(monthEvents.length, 'mantenimiento', 'mantenimientos')}`;
+  const note = detailed && monthEvents.length === 0
+    ? `<p class="calendar-month-note">${
+        state.filter === 'todos'
+          ? 'Sin mantenimientos programados este mes.'
+          : 'Sin mantenimientos de este tipo en el mes.'
+      }</p>`
+    : '';
+
+  return `
+    <section class="calendar-month${detailed ? ' is-detailed' : ''}" aria-labelledby="calendar-month-${monthIndex}">
+      <div class="calendar-month-header">
+        <h3 class="calendar-month-name" id="calendar-month-${monthIndex}">${heading}</h3>
+        <span class="calendar-month-count${monthEvents.length ? '' : ' is-empty'}" title="${countTitle}">
+          ${monthEvents.length}
+        </span>
+      </div>
+      <div class="calendar-weekdays${detailed ? ' is-detailed' : ''}" aria-hidden="true">
+        ${weekdays.map(name => `<span>${name}</span>`).join('')}
+      </div>
+      <div class="calendar-days${detailed ? ' is-detailed' : ''}">
+        ${daysHtml}
+      </div>
+      ${note}
+    </section>
+  `;
+}
+
+/**
+ * Retícula anual: los doce meses en un mismo plano.
+ */
 function renderMonths() {
   const container = document.getElementById('calendar-months');
   if (!container) return;
 
   const events = filteredEvents();
-  const eventsByDate = new Map();
-
-  events.forEach(event => {
-    if (!event.date) return;
-    const list = eventsByDate.get(event.date) || [];
-    list.push(event);
-    eventsByDate.set(event.date, list);
-  });
-
-  const today = toISODate(new Date());
+  const eventsByDate = groupEventsByDate(events);
   let html = '';
 
   for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
     const monthPrefix = `${state.year}-${String(monthIndex + 1).padStart(2, '0')}-`;
     const monthEvents = events.filter(event => event.date && event.date.startsWith(monthPrefix));
-    const firstDay = new Date(state.year, monthIndex, 1);
-    const leadingBlanks = (firstDay.getDay() + 6) % 7; // Lunes = 0
-    const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
-    const cells = 42; // Seis semanas fijas para que todos los meses midan igual.
-
-    let daysHtml = '';
-
-    for (let cell = 0; cell < cells; cell++) {
-      const dayNumber = cell - leadingBlanks + 1;
-
-      if (dayNumber < 1 || dayNumber > daysInMonth) {
-        daysHtml += '<span class="calendar-day is-blank" aria-hidden="true"></span>';
-        continue;
-      }
-
-      const date = new Date(state.year, monthIndex, dayNumber);
-      const dateString = toISODate(date);
-      const dayEvents = eventsByDate.get(dateString) || [];
-      const isToday = dateString === today;
-      const isSelected = dateString === state.selectedDate;
-
-      const classes = ['calendar-day'];
-      if (dayEvents.length) classes.push('has-events');
-      if (isToday) classes.push('is-today');
-      if (isSelected) classes.push('is-selected');
-
-      const dots = dayEvents.slice(0, 3).map(event => {
-        const done = isClosedStatus(event.status) ? ' is-done' : '';
-        return `<span class="calendar-day-dot is-${escapeAttr(event.type)}${done}"></span>`;
-      }).join('');
-
-      let label = `${WEEKDAY_NAMES[date.getDay()].toLowerCase()} ${dayNumber} de ${MONTH_NAMES[monthIndex].toLowerCase()} de ${state.year}`;
-      if (dayEvents.length) {
-        const preventivos = dayEvents.filter(event => event.type === 'preventivo').length;
-        const correctivos = dayEvents.filter(event => event.type === 'correctivo').length;
-        const details = [];
-        if (preventivos) details.push(`${preventivos} ${plural(preventivos, 'preventivo', 'preventivos')}`);
-        if (correctivos) details.push(`${correctivos} ${plural(correctivos, 'correctivo', 'correctivos')}`);
-        label += `. ${dayEvents.length} ${plural(dayEvents.length, 'mantenimiento', 'mantenimientos')}: ${details.join(' y ')}`;
-      } else {
-        label += '. Sin mantenimientos';
-      }
-      if (isToday) label += '. Hoy';
-
-      daysHtml += `
-        <button type="button" class="${classes.join(' ')}" data-date="${dateString}"
-          aria-pressed="${isSelected ? 'true' : 'false'}"
-          ${isToday ? 'aria-current="date"' : ''}
-          aria-label="${escapeAttr(label)}">
-          <span class="calendar-day-number">${dayNumber}</span>
-          <span class="calendar-day-dots" aria-hidden="true">${dots}</span>
-        </button>
-      `;
-    }
-
-    html += `
-      <section class="calendar-month" aria-labelledby="calendar-month-${monthIndex}">
-        <div class="calendar-month-header">
-          <h3 class="calendar-month-name" id="calendar-month-${monthIndex}">${MONTH_NAMES[monthIndex]}</h3>
-          <span class="calendar-month-count${monthEvents.length ? '' : ' is-empty'}"
-            title="${monthEvents.length} ${plural(monthEvents.length, 'mantenimiento', 'mantenimientos')}">
-            ${monthEvents.length}
-          </span>
-        </div>
-        <div class="calendar-weekdays" aria-hidden="true">
-          ${WEEKDAY_LETTERS.map(letter => `<span>${letter}</span>`).join('')}
-        </div>
-        <div class="calendar-days">
-          ${daysHtml}
-        </div>
-      </section>
-    `;
+    html += renderMonthSection(monthIndex, monthEvents, eventsByDate, false);
   }
 
   container.innerHTML = html;
 }
+
+/**
+ * Vista mensual: un solo mes con las intervenciones rotuladas.
+ */
+function renderMonth() {
+  const container = document.getElementById('calendar-months');
+  if (!container) return;
+
+  const monthIndex = parseISODate(state.selectedDate).getMonth();
+  const events = filteredEvents();
+  const eventsByDate = groupEventsByDate(events);
+  const monthPrefix = `${state.year}-${String(monthIndex + 1).padStart(2, '0')}-`;
+  const monthEvents = events.filter(event => event.date && event.date.startsWith(monthPrefix));
+
+  container.innerHTML = renderMonthSection(monthIndex, monthEvents, eventsByDate, true);
+}
+
+/**
+ * Marca un día como seleccionado sin reconstruir la retícula, de modo que el
+ * foco de quien navega con el teclado se conserve.
+ * @param {string} date
+ */
+function selectDay(date) {
+  state.selectedDate = date;
+
+  const container = document.getElementById('calendar-months');
+  container?.querySelectorAll('[data-date]').forEach(cell => {
+    const isSelected = cell.dataset.date === date;
+    cell.classList.toggle('is-selected', isSelected);
+    cell.setAttribute('aria-pressed', String(isSelected));
+  });
+
+  renderDayPanel();
+  revealDayPanelOnCompact();
+}
+
 
 function renderDayPanel() {
   const date = parseISODate(state.selectedDate);
@@ -420,7 +651,9 @@ function renderDayPanel() {
  * Al elegir una fecha, lo trae a la vista si quedó fuera de pantalla.
  */
 function revealDayPanelOnCompact() {
-  if (window.innerWidth > 980) return;
+  const isStacked = window.innerWidth <= 980 ||
+    (state.view === 'month' && window.innerWidth <= 1180);
+  if (!isStacked) return;
 
   const panel = document.querySelector('.calendar-day-panel');
   if (!panel) return;
@@ -495,6 +728,26 @@ function renderEventCard(event) {
 /* -------------------------------------------------------------------------- */
 /* Carga de datos                                                             */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Avanza o retrocede un mes conservando el día cuando existe en el destino.
+ * Si el salto cruza el año, recarga el cronograma del año correspondiente.
+ * @param {number} offset
+ */
+function shiftMonth(offset) {
+  const current = parseISODate(state.selectedDate);
+  const target = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+  const daysInTarget = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  const next = new Date(target.getFullYear(), target.getMonth(), Math.min(current.getDate(), daysInTarget));
+  const nextISO = toISODate(next);
+
+  if (next.getFullYear() !== state.year) {
+    loadYear(next.getFullYear(), { selectedDate: nextISO });
+  } else {
+    state.selectedDate = nextISO;
+    renderCalendar();
+  }
+}
 
 function loadYear(year, { selectedDate = null } = {}) {
   if (year < 1900 || year > 2100) return;
@@ -842,6 +1095,7 @@ function bindCalendarEvents() {
   const nextYear = document.getElementById('calendar-next-year');
   const todayButton = document.getElementById('calendar-today');
   const filterButtons = Array.from(document.querySelectorAll('[data-calendar-filter]'));
+  const viewButtons = Array.from(document.querySelectorAll('[data-calendar-view]'));
   const newButton = document.getElementById('btn-calendar-new');
   const newDayButton = document.getElementById('btn-calendar-day-new');
   const closeButton = document.getElementById('btn-close-maintenance');
@@ -859,10 +1113,7 @@ function bindCalendarEvents() {
     const day = event.target.closest('[data-date]');
     if (!day) return;
 
-    state.selectedDate = day.dataset.date;
-    renderMonths();
-    renderDayPanel();
-    revealDayPanelOnCompact();
+    selectDay(day.dataset.date);
   });
 
   // Navegación con flechas dentro de la retícula: refuerza el uso sin ratón.
@@ -882,14 +1133,19 @@ function bindCalendarEvents() {
     }[event.key];
 
     const next = new Date(current.getFullYear(), current.getMonth(), current.getDate() + delta);
-    if (next.getFullYear() !== state.year) return;
+    if (state.view === 'year' && next.getFullYear() !== state.year) return;
 
-    state.selectedDate = toISODate(next);
-    renderMonths();
-    renderDayPanel();
+    const nextISO = toISODate(next);
+    state.selectedDate = nextISO;
+    pendingFocusDate = nextISO;
 
-    const nextCell = months.querySelector(`[data-date="${state.selectedDate}"]`);
-    nextCell?.focus();
+    // La vista mensual sigue el foco al mes contiguo; el año se recarga solo
+    // cuando la navegación cruza el 31 de diciembre.
+    if (next.getFullYear() !== state.year) {
+      loadYear(next.getFullYear(), { selectedDate: nextISO });
+    } else {
+      renderCalendar();
+    }
   });
 
   dayList?.addEventListener('click', event => {
@@ -920,8 +1176,21 @@ function bindCalendarEvents() {
     }
   });
 
-  prevYear?.addEventListener('click', () => loadYear(state.year - 1));
-  nextYear?.addEventListener('click', () => loadYear(state.year + 1));
+  prevYear?.addEventListener('click', () => {
+    if (state.view === 'month') {
+      shiftMonth(-1);
+    } else {
+      loadYear(state.year - 1);
+    }
+  });
+
+  nextYear?.addEventListener('click', () => {
+    if (state.view === 'month') {
+      shiftMonth(1);
+    } else {
+      loadYear(state.year + 1);
+    }
+  });
 
   todayButton?.addEventListener('click', () => {
     const today = new Date();
@@ -930,9 +1199,20 @@ function bindCalendarEvents() {
       loadYear(today.getFullYear(), { selectedDate: todayString });
     } else {
       state.selectedDate = todayString;
-      renderMonths();
-      renderDayPanel();
+      renderCalendar();
     }
+  });
+
+  viewButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const view = button.dataset.calendarView === 'year' ? 'year' : 'month';
+      if (state.view === view) return;
+
+      state.view = view;
+      saveViewPreference(view);
+      applyViewButtons();
+      renderCalendar();
+    });
   });
 
   filterButtons.forEach(button => {
@@ -944,8 +1224,7 @@ function bindCalendarEvents() {
       filterButtons.forEach(item => {
         item.setAttribute('aria-pressed', String(item === button));
       });
-      renderMonths();
-      renderDayPanel();
+      renderCalendar();
     });
   });
 

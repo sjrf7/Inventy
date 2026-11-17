@@ -1430,11 +1430,13 @@
 
 .calendar-year-label {
   min-width: 58px;
+  padding: 0 4px;
   text-align: center;
   font-size: 13.5px;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .calendar-icon-btn {
@@ -1468,7 +1470,8 @@
   box-shadow: var(--ring);
 }
 
-.calendar-segmented {
+.calendar-segmented,
+.calendar-view-switch {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -1478,7 +1481,8 @@
   border-radius: var(--radius-md);
 }
 
-.calendar-segmented button {
+.calendar-segmented button,
+.calendar-view-switch button {
   min-height: 32px;
   padding: 0 10px;
   background: none;
@@ -1492,17 +1496,20 @@
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.calendar-segmented button:hover {
+.calendar-segmented button:hover,
+.calendar-view-switch button:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.calendar-segmented button[aria-pressed="true"] {
+.calendar-segmented button[aria-pressed="true"],
+.calendar-view-switch button[aria-pressed="true"] {
   background-color: var(--primary-soft);
   color: var(--primary);
 }
 
-.calendar-segmented button:focus-visible {
+.calendar-segmented button:focus-visible,
+.calendar-view-switch button:focus-visible {
   outline: none;
   box-shadow: var(--ring);
 }
@@ -2147,9 +2154,188 @@
   display: none;
 }
 
+/* Vista mensual detallada: un mes por pantalla con las intervenciones
+   rotuladas dentro de cada día. */
+.calendar-month.is-detailed {
+  grid-column: 1 / -1;
+  padding: 14px 14px 16px;
+}
+
+.calendar-month.is-detailed .calendar-month-header {
+  margin-bottom: 10px;
+}
+
+.calendar-month.is-detailed .calendar-month-name {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.calendar-weekdays.is-detailed {
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.calendar-weekdays.is-detailed span {
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+}
+
+.calendar-days.is-detailed {
+  gap: 4px;
+}
+
+.calendar-days.is-detailed .calendar-day {
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 3px;
+  min-height: 88px;
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  text-align: left;
+}
+
+.calendar-days.is-detailed .calendar-day:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.calendar-days.is-detailed .calendar-day.is-today {
+  border-color: var(--primary);
+}
+
+.calendar-days.is-detailed .calendar-day.is-selected {
+  background-color: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.calendar-days.is-detailed .calendar-day.is-blank {
+  background: none;
+  border-color: transparent;
+}
+
+.calendar-day-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+}
+
+.calendar-days.is-detailed .calendar-day-number {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.calendar-days.is-detailed .calendar-day.is-today .calendar-day-number,
+.calendar-days.is-detailed .calendar-day.is-selected .calendar-day-number {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.calendar-today-flag {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.calendar-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.calendar-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background-color: var(--bg-tertiary);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.calendar-chip.is-preventivo {
+  background-color: var(--primary-soft);
+}
+
+.calendar-chip.is-correctivo {
+  background-color: var(--warning-soft);
+}
+
+.calendar-chip.is-status-completado,
+.calendar-chip.is-status-cancelado {
+  opacity: 0.62;
+}
+
+.calendar-chip-dot {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+.calendar-chip.is-correctivo .calendar-chip-dot {
+  background-color: var(--warning);
+}
+
+.calendar-chip-time {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-chip-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.calendar-chip-more {
+  padding-left: 2px;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.calendar-month-note {
+  margin: 10px 2px 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
 @media (max-width: 1280px) {
   .calendar-months {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* El mes detallado necesita más ancho que la retícula anual: si el panel del
+   día le resta espacio, pasa a colocarse encima hasta que la ventana crezca. */
+@media (max-width: 1180px) {
+  .calendar-layout.is-month-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-layout.is-month-layout .calendar-day-panel {
+    position: static;
+  }
+
+  .calendar-layout.is-month-layout .calendar-day-list {
+    max-height: 420px;
   }
 }
 
@@ -2161,6 +2347,12 @@
   .calendar-day-panel {
     position: static;
     order: -1;
+  }
+
+  /* En la vista mensual el calendario va primero: el panel del día queda
+     debajo y la selección lo trae a la vista. */
+  .calendar-layout.is-month-layout .calendar-day-panel {
+    order: 0;
   }
 
   .calendar-day-list {
@@ -2216,6 +2408,7 @@
    los 44 px. Se declara aquí porque esta hoja se carga después de base.css. */
 @media (pointer: coarse) {
   .calendar-segmented button,
+  .calendar-view-switch button,
   .calendar-day {
     min-height: 44px;
   }
@@ -2225,5 +2418,65 @@
   .calendar-action-btn {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+/* La vista mensual reduce el detalle de las fichas cuando el ancho aprieta:
+   primero oculta el título y, en el móvil, conserva solo los puntos de tipo. */
+@media (max-width: 900px) {
+  .calendar-days.is-detailed .calendar-day {
+    min-height: 82px;
+  }
+}
+
+@media (max-width: 720px) {
+  .calendar-chip-title {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendar-month.is-detailed {
+    padding: 12px 10px;
+  }
+
+  .calendar-days.is-detailed {
+    gap: 3px;
+  }
+
+  .calendar-days.is-detailed .calendar-day {
+    align-items: center;
+    justify-content: center;
+    min-height: 58px;
+    padding: 5px 3px;
+  }
+
+  .calendar-day-top {
+    justify-content: center;
+  }
+
+  .calendar-day-events {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .calendar-chip {
+    width: auto;
+    padding: 0;
+    background: none;
+  }
+
+  .calendar-chip-time,
+  .calendar-chip-title,
+  .calendar-chip-more,
+  .calendar-today-flag {
+    display: none;
+  }
+
+  .calendar-chip-dot {
+    width: 5px;
+    height: 5px;
   }
 }
