@@ -101,6 +101,50 @@ export function initAuth(onLoginSuccess) {
   const iconEye = document.getElementById("icon-eye");
   const iconEyeOff = document.getElementById("icon-eye-off");
 
+  const captchaImg = document.getElementById("login-captcha-img");
+  const captchaInput = document.getElementById("login-captcha");
+  const captchaHelp = document.getElementById("login-captcha-help");
+  const refreshCaptchaBtn = document.getElementById("btn-refresh-captcha");
+  const captchaHelpDefault = captchaHelp ? captchaHelp.textContent : "";
+
+  /**
+   * Pide un CAPTCHA nuevo al servidor e invalida el anterior.
+   * También limpia el campo para que no se reenvíe un código ya usado.
+   * @param {boolean} focusInput - Enfoca el campo después de refrescar.
+   */
+  function refreshCaptcha(focusInput = false) {
+    if (captchaInput) captchaInput.value = "";
+
+    if (captchaImg) {
+      captchaImg.classList.add("is-loading");
+      captchaImg.src = "api/captcha.php?t=" + Date.now();
+    }
+
+    if (refreshCaptchaBtn) {
+      refreshCaptchaBtn.classList.add("is-refreshing");
+      window.setTimeout(() => refreshCaptchaBtn.classList.remove("is-refreshing"), 460);
+    }
+
+    if (focusInput && captchaInput) captchaInput.focus();
+  }
+
+  if (captchaImg) {
+    captchaImg.addEventListener("load", () => {
+      captchaImg.classList.remove("is-loading");
+      if (captchaHelp) captchaHelp.textContent = captchaHelpDefault;
+    });
+    captchaImg.addEventListener("error", () => {
+      captchaImg.classList.remove("is-loading");
+      if (captchaHelp) {
+        captchaHelp.textContent = "No se pudo cargar el código. Pulsa «Cambiar» para intentarlo de nuevo.";
+      }
+    });
+  }
+
+  if (refreshCaptchaBtn) {
+    refreshCaptchaBtn.addEventListener("click", () => refreshCaptcha(true));
+  }
+
   // Alterna la visibilidad de la contraseña (mostrar/ocultar)
   if (togglePassBtn && passwordInput) {
     togglePassBtn.addEventListener("click", () => {
@@ -128,6 +172,16 @@ export function initAuth(onLoginSuccess) {
       // Oculta mensajes de error previos
       if (errorMsg) errorMsg.style.display = "none";
 
+      // El CAPTCHA se valida antes de enviar para dar un mensaje inmediato.
+      if (captchaInput && !captchaInput.value.trim()) {
+        if (errorMsg) {
+          errorMsg.style.display = "block";
+          errorMsg.textContent = "Escribe el código de verificación de la imagen.";
+        }
+        captchaInput.focus();
+        return;
+      }
+
       // Muestra el indicador visual de carga (Spinner)
       if (submitBtn) submitBtn.disabled = true;
       if (btnText) btnText.style.display = "none";
@@ -139,13 +193,29 @@ export function initAuth(onLoginSuccess) {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({
+          username,
+          password,
+          captcha: captchaInput ? captchaInput.value.trim() : ""
+        })
       })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Credenciales inválidas");
+      .then(async response => {
+        let payload = null;
+        try {
+          payload = await response.json();
+        } catch (e) {
+          payload = null;
         }
-        return response.json();
+
+        if (!response.ok || !payload || payload.success !== true) {
+          const error = new Error(
+            (payload && payload.error) || "No se pudo iniciar sesión. Inténtalo de nuevo."
+          );
+          error.reason = (payload && payload.reason) || "unknown";
+          throw error;
+        }
+
+        return payload;
       })
       .then(data => {
         if (data.success) {
@@ -189,19 +259,32 @@ export function initAuth(onLoginSuccess) {
         if (btnText) btnText.style.display = "block";
         if (spinner) spinner.style.display = "none";
 
+        const isNetworkError = error instanceof TypeError;
+        const message = isNetworkError
+          ? "No se pudo conectar con el servidor. Inténtalo de nuevo."
+          : (error && error.message) || "No se pudo iniciar sesión. Inténtalo de nuevo.";
+
         // Muestra el mensaje de error con animación de sacudida
         if (errorMsg) {
           errorMsg.style.display = "block";
-          errorMsg.textContent = error && error.message === "Credenciales inválidas"
-            ? "Usuario o contraseña incorrectos."
-            : "No se pudo conectar con el servidor. Inténtalo de nuevo.";
+          errorMsg.textContent = message;
           // Reinicia la animación de sacudida
           errorMsg.style.animation = 'none';
           errorMsg.offsetHeight; /* Fuerza el redibujado del navegador */
           errorMsg.style.animation = null;
         }
-        if (passwordInput) {
-          passwordInput.value = "";
+
+        // El código es de un solo uso: se renueva después de cualquier fallo.
+        refreshCaptcha();
+
+        if (error && (error.reason === "credentials" || error.reason === "fields")) {
+          if (passwordInput) {
+            passwordInput.value = "";
+            passwordInput.focus();
+          }
+        } else if (captchaInput) {
+          captchaInput.focus();
+        } else if (passwordInput) {
           passwordInput.focus();
         }
       });
@@ -271,6 +354,9 @@ export function initAuth(onLoginSuccess) {
     if (pInput) pInput.value = "";
     if (rCheck) rCheck.checked = false;
     if (eMsg) eMsg.style.display = "none";
+
+    // El CAPTCHA anterior pudo caducar mientras la sesión estaba abierta.
+    refreshCaptcha();
     
     if (sBtn) sBtn.disabled = false;
     if (bTxt) bTxt.style.display = "block";

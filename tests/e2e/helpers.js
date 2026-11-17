@@ -85,8 +85,31 @@ async function login(page, { username = USERNAME, password = PASSWORD } = {}) {
   await openApp(page);
   await page.fill('#login-username', username);
   await page.fill('#login-password', password);
+
+  // La suite se ejecuta contra un servidor con INVENTY_CAPTCHA_DISABLED=1,
+  // por lo que el servidor no valida este valor. Con el CAPTCHA activo no es
+  // posible automatizar la lectura de la imagen.
+  const captchaInput = page.locator('#login-captcha');
+  if (await captchaInput.count()) {
+    await captchaInput.fill(process.env.INVENTY_CAPTCHA || 'TEST');
+  }
+
   await page.click('#btn-login-submit');
-  await page.waitForSelector('#login-screen', { state: 'hidden', timeout: 8000 });
+  try {
+    await page.waitForSelector('#login-screen', { state: 'hidden', timeout: 8000 });
+  } catch (error) {
+    const message = (
+      (await page.locator('#login-error-msg').textContent().catch(() => '')) || ''
+    ).trim();
+
+    if (/código de verificación/i.test(message)) {
+      throw new Error(
+        `El servidor exige CAPTCHA y la suite no puede resolverlo. ` +
+          `Levántalo con "npm run serve:test". Mensaje del servidor: ${message}`
+      );
+    }
+    throw error;
+  }
   await page.waitForTimeout(600);
 }
 

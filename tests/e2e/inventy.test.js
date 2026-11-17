@@ -4,7 +4,7 @@
  * Requisitos:
  *   npm install
  *   npx playwright install chromium
- *   npm run serve   # en otra terminal
+ *   npm run serve:test   # en otra terminal (CAPTCHA desactivado para tests)
  *   npm run test:e2e
  *
  * Las pruebas solo inician sesión, navegan y abren formularios; no guardan
@@ -54,9 +54,30 @@ test('La pantalla de login bloquea el panel con inert', async () => {
   assert.notEqual(await page.locator('.app-container').getAttribute('inert'), null);
 });
 
+test('El login muestra un CAPTCHA renovable', async () => {
+  const image = page.locator('#login-captcha-img');
+  assert.equal(await image.isVisible(), true);
+  assert.equal(
+    await image.evaluate((img) => img.complete && img.naturalWidth > 0),
+    true
+  );
+
+  const firstSrc = await image.getAttribute('src');
+  await page.click('#btn-refresh-captcha');
+  await page.waitForTimeout(600);
+
+  const secondSrc = await image.getAttribute('src');
+  assert.notEqual(firstSrc, secondSrc, 'el código debe cambiar al pulsar «Cambiar»');
+  assert.equal(
+    await image.evaluate((img) => img.complete && img.naturalWidth > 0),
+    true
+  );
+});
+
 test('Rechaza credenciales incorrectas con un mensaje claro', async () => {
   await page.fill('#login-username', 'admin');
   await page.fill('#login-password', 'clave-incorrecta');
+  await page.fill('#login-captcha', process.env.INVENTY_CAPTCHA || 'TEST');
   await page.click('#btn-login-submit');
   await page.waitForTimeout(900);
 

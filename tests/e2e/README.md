@@ -19,10 +19,11 @@ npx playwright install chromium
 
 ## Ejecución
 
-En una terminal, levanta el servidor:
+En una terminal, levanta el servidor con el CAPTCHA desactivado para que la
+suite pueda iniciar sesión automáticamente:
 
 ```bash
-npm run serve
+npm run serve:test
 ```
 
 En otra, ejecuta la suite:
@@ -32,14 +33,22 @@ npm run test:e2e          # Chromium sin ventana
 npm run test:e2e:headed   # Chromium visible (INVENTY_HEADED=1)
 ```
 
+> En Windows, `npm run serve:test` puede no interpretar la variable de entorno.
+> En ese caso ejecuta en PowerShell:
+> `$env:INVENTY_CAPTCHA_DISABLED="1"; php -S 0.0.0.0:8000`
+>
+> Para probar el login con el CAPTCHA real usa `npm run serve` y escribe el
+> código que muestra la imagen.
+
 ## Variables de entorno
 
-| Variable            | Valor por defecto       | Descripción                          |
-| ------------------- | ----------------------- | ------------------------------------ |
-| `INVENTY_BASE_URL`  | `http://localhost:8000` | URL base donde se sirve la app.      |
-| `INVENTY_USER`      | `admin`                 | Usuario de prueba.                   |
-| `INVENTY_PASS`      | `admin`                 | Contraseña de prueba.                |
-| `INVENTY_HEADED`    | (sin definir)           | `1` muestra el navegador.            |
+| Variable                   | Valor por defecto       | Descripción                                      |
+| -------------------------- | ----------------------- | ------------------------------------------------ |
+| `INVENTY_BASE_URL`         | `http://localhost:8000` | URL base donde se sirve la app.                  |
+| `INVENTY_USER`             | `admin`                 | Usuario de prueba.                               |
+| `INVENTY_PASS`             | `admin`                 | Contraseña de prueba.                            |
+| `INVENTY_HEADED`           | (sin definir)           | `1` muestra el navegador.                        |
+| `INVENTY_CAPTCHA_DISABLED` | (sin definir)           | `1` desactiva la validación del CAPTCHA (tests). |
 
 Ejemplo:
 
@@ -50,6 +59,7 @@ INVENTY_BASE_URL=http://192.168.0.200:8000 npm run test:e2e
 ## Qué cubre
 
 - Login correcto e incorrecto, mensaje de error y `inert` del panel.
+- CAPTCHA visible, imagen válida y renovación del código.
 - Layout sin desbordamiento y navegación por hash, enlaces profundos y atrás.
 - Inventario: búsqueda, filtros por estado y orden.
 - Ficha del bien: pestañas ARIA, teclado, trampa de foco y retorno del foco.

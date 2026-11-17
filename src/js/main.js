@@ -9,7 +9,7 @@ import { generateReport } from './views/reports.js';
 import { openAssetDetailModal, openAssetFormModal } from './components/modals.js';
 import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr, escapeHtml, getDepartmentOptions } from './utils.js';
 import { initMotion, closeModal, closeAllModals, revealPreview, runThemeTransition } from './motion.js';
-import { initAuth } from './auth.js?v=1.2.3';
+import { initAuth } from './auth.js?v=1.2.4';
 
 let uploadedImageBase64 = null;
 let activeDetailAssetId = null;
