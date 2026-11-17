@@ -121,6 +121,8 @@ const VIEW_BY_HASH = {
   transfers: 'transfers',
   soporte: 'support',
   support: 'support',
+  calendario: 'calendar',
+  calendar: 'calendar',
   reportes: 'reports',
   reports: 'reports'
 };

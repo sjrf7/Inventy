@@ -467,14 +467,123 @@ test('Desincorporar desde soporte pide confirmación y no guarda si se cancela',
 });
 
 /* -------------------------------------------------------------------------- */
+/* Calendario de mantenimiento                                                */
+/* -------------------------------------------------------------------------- */
+
+test('El calendario muestra los 12 meses y el detalle del día', async () => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoView(page, 'calendario');
+  await page.waitForSelector('.calendar-month', { timeout: 8000 });
+
+  assert.equal(await page.locator('.calendar-month').count(), 12);
+  assert.equal((await page.locator('.calendar-month-name').first().textContent()).trim(), 'Enero');
+  assert.equal(await page.locator('.nav-item.active').getAttribute('data-view'), 'calendar');
+  assert.equal(await page.locator('.calendar-day.is-today').count(), 1);
+  assert.equal(await page.locator('.calendar-day.is-selected').count(), 1);
+
+  const total = Number(await page.locator('#calendar-stat-total').textContent());
+  assert.ok(total >= 12, `se esperaban eventos sembrados; total ${total}`);
+
+  const seededDay = page.locator('.calendar-day[data-date="2026-11-08"]');
+  assert.equal(await seededDay.count(), 1);
+  await seededDay.click();
+  await page.waitForTimeout(250);
+
+  assert.match((await page.locator('#calendar-day-title').textContent()).trim(), /8 de noviembre/);
+  assert.equal(
+    await page.locator('.calendar-event', { hasText: 'Mantenimiento preventivo de la impresora LaserJet' }).count(),
+    1
+  );
+
+  await page.click('[data-calendar-filter="correctivo"]');
+  assert.equal(await page.locator('[data-calendar-filter="correctivo"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('.calendar-day-dot.is-preventivo').count(), 0);
+  assert.ok(await page.locator('.calendar-day-dot.is-correctivo').count() > 0);
+
+  await page.click('[data-calendar-filter="todos"]');
+});
+
+test('El calendario se recorre con las flechas del teclado', async () => {
+  await gotoView(page, 'calendario');
+  await page.waitForSelector('.calendar-month', { timeout: 8000 });
+
+  const origin = page.locator('.calendar-day[data-date="2026-11-16"]');
+  await origin.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(180);
+
+  assert.equal(await page.locator('.calendar-day.is-selected').getAttribute('data-date'), '2026-11-17');
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.getAttribute('data-date')),
+    '2026-11-17'
+  );
+});
+
+test('El calendario programa, completa y elimina un mantenimiento', async () => {
+  const title = `Prueba E2E ${Date.now()}`;
+  const date = '2026-03-03';
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await gotoView(page, 'calendario');
+    await page.waitForSelector('.calendar-month', { timeout: 8000 });
+
+    await page.locator(`.calendar-day[data-date="${date}"]`).click();
+    await page.waitForTimeout(180);
+    await page.click('#btn-calendar-new');
+    await page.waitForSelector('#modal-maintenance.active');
+    assert.equal(await page.locator('#maintenance-date').inputValue(), date);
+
+    await page.fill('#maintenance-title', title);
+    await page.selectOption('#maintenance-type', 'correctivo');
+    await page.fill('#maintenance-time', '11:30');
+    await page.fill('#maintenance-details', 'Evento temporal de la suite E2E.');
+    await page.click('#btn-save-maintenance');
+    await page.waitForSelector('#modal-maintenance', { state: 'hidden', timeout: 8000 });
+    await page.waitForTimeout(450);
+
+    let card = page.locator('.calendar-event', { hasText: title });
+    assert.equal(await card.count(), 1);
+    assert.equal((await page.locator('#calendar-status').textContent()).trim(), 'Mantenimiento programado.');
+
+    // Completar desde la tarjeta del día.
+    await card.locator('[data-action="toggle"]').click();
+    await page.waitForTimeout(650);
+    card = page.locator('.calendar-event', { hasText: title });
+    assert.equal(await card.locator('.calendar-status-badge.is-completado').count(), 1);
+
+    // Eliminar con confirmación.
+    await card.locator('[data-action="delete"]').click();
+    await answerConfirm(page, { accept: true });
+    await page.waitForFunction(
+      (eventTitle) => !Array.from(document.querySelectorAll('.calendar-event-title'))
+        .some((element) => element.textContent.trim() === eventTitle),
+      title,
+      { timeout: 5000 }
+    );
+  } finally {
+    // Limpieza defensiva si una aserción falla antes de borrar desde la interfaz.
+    const response = await fetch(`${BASE_URL}api/maintenance.php?year=2026`);
+    if (response.ok) {
+      const events = await response.json();
+      const leaked = events.find((event) => event.title === title);
+      if (leaked) {
+        await fetch(`${BASE_URL}api/maintenance.php?id=${encodeURIComponent(leaked.id)}`, { method: 'DELETE' });
+      }
+    }
+  }
+});
+
+/* -------------------------------------------------------------------------- */
 /* Responsive                                                                 */
 /* -------------------------------------------------------------------------- */
 
 test('No hay desbordamiento horizontal en anchos habituales', async () => {
   for (const width of [1280, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const view of ['dashboard', 'inventario', 'reportes']) {
+    for (const view of ['dashboard', 'inventario', 'calendario', 'reportes']) {
       await gotoView(page, view);
+      if (view === 'calendario') await page.waitForSelector('.calendar-month', { timeout: 8000 });
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - window.innerWidth
       );
@@ -548,10 +657,13 @@ test('Los objetivos táctiles alcanzan 44 px en pantallas táctiles', async () =
       '.searchable-select-item'
     ];
 
-    const views = ['dashboard', 'inventario', 'soporte', 'traspasos', 'reportes'];
+    const views = ['dashboard', 'inventario', 'soporte', 'traspasos', 'calendario', 'reportes'];
     const small = [];
     for (const view of views) {
       await gotoView(touchPage, view);
+      if (view === 'calendario') {
+        await touchPage.waitForSelector('.calendar-month', { timeout: 8000 });
+      }
       small.push(...(await measure(selectors)).filter((item) => item.h < 44));
     }
 

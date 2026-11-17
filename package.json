@@ -1,6 +1,6 @@
 {
   "name": "inventy",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "private": true,
   "description": "Inventy — control de bienes e inventario institucional",
   "scripts": {

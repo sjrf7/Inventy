@@ -23,6 +23,10 @@ export const VIEWS = {
     title: "Soporte Técnico",
     subtitle: "Informes de reparaciones, diagnósticos y mantenimiento técnico"
   },
+  calendar: {
+    title: "Calendario de Mantenimiento",
+    subtitle: "Cronograma anual de mantenimientos preventivos y correctivos"
+  },
   reports: {
     title: "Reportes Institucionales",
     subtitle: "Generación de informes formales detallados y actas de bienes"
@@ -35,6 +39,7 @@ const HASH_BY_VIEW = {
   inventory: "inventario",
   transfers: "traspasos",
   support: "soporte",
+  calendar: "calendario",
   reports: "reportes"
 };
 
@@ -46,6 +51,8 @@ const VIEW_BY_HASH = {
   transfers: "transfers",
   soporte: "support",
   support: "support",
+  calendario: "calendar",
+  calendar: "calendar",
   reportes: "reports",
   reports: "reports"
 };

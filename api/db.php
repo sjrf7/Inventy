@@ -379,6 +379,177 @@ function seedDatabase($pdo) {
     ]);
 }
 
+/**
+ * Crea la tabla del calendario de mantenimientos preventivos y correctivos.
+ * Se mantiene separada de `reports` porque el calendario planifica trabajo
+ * futuro, mientras que los informes registran intervenciones ya realizadas.
+ *
+ * @param PDO $pdo
+ */
+function ensureMaintenanceTable($pdo) {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS maintenance_events (
+        id VARCHAR(50) NOT NULL,
+        asset_id VARCHAR(50) DEFAULT NULL,
+        asset_name VARCHAR(255) DEFAULT NULL,
+        title VARCHAR(255) NOT NULL,
+        type VARCHAR(20) NOT NULL DEFAULT 'preventivo',
+        status VARCHAR(20) NOT NULL DEFAULT 'programado',
+        `date` DATE NOT NULL,
+        `time` VARCHAR(10) DEFAULT NULL,
+        technician VARCHAR(255) DEFAULT NULL,
+        department VARCHAR(255) DEFAULT NULL,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_maintenance_date (`date`),
+        INDEX idx_maintenance_type (type),
+        INDEX idx_maintenance_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+/**
+ * Siembra un cronograma de ejemplo para 2026. Solo se ejecuta cuando la tabla
+ * se acaba de crear, de modo que borrar eventos no los vuelve a insertar.
+ *
+ * @param PDO $pdo
+ */
+function seedMaintenanceEvents($pdo) {
+    $today = date('Y-m-d');
+
+    $assets = [];
+    try {
+        $assets = $pdo->query("SELECT id, name, department FROM assets")->fetchAll();
+    } catch (Throwable $e) {
+        // Sin inventario se siembran eventos genéricos, igualmente útiles.
+    }
+
+    $assetsById = [];
+    foreach ($assets as $asset) {
+        $assetsById[$asset['id']] = $asset;
+    }
+
+    $statusForDate = function ($date) use ($today) {
+        if ($date < $today) return 'completado';
+        if ($date === $today) return 'en_proceso';
+        return 'programado';
+    };
+
+    $rows = [];
+    $counter = 0;
+
+    $push = function ($date, $time, $title, $type, $status, $assetId, $technician, $details, $departmentFallback = '') use (&$rows, &$counter, $assetsById) {
+        $counter++;
+        $asset = ($assetId !== null && isset($assetsById[$assetId])) ? $assetsById[$assetId] : null;
+
+        $rows[] = [
+            'id' => sprintf('MNT-%s-%03d', substr($date, 0, 4), $counter),
+            'asset_id' => $asset ? $asset['id'] : ($assetId ?: null),
+            'asset_name' => $asset ? $asset['name'] : null,
+            'title' => $title,
+            'type' => $type,
+            'status' => $status,
+            'date' => $date,
+            'time' => $time,
+            'technician' => $technician,
+            'department' => $asset ? $asset['department'] : $departmentFallback,
+            'details' => $details,
+        ];
+    };
+
+    // Preventivo mensual de la impresora departamental: todos los días 8.
+    for ($month = 1; $month <= 12; $month++) {
+        $date = sprintf('2026-%02d-08', $month);
+        $push(
+            $date,
+            '09:00',
+            'Mantenimiento preventivo de la impresora LaserJet',
+            'preventivo',
+            $statusForDate($date),
+            'INV-2026-004',
+            'Carlos J. - Soporte Técnico',
+            'Limpieza de rodillos y bandejas, revisión del tóner y prueba de impresión.',
+            'Administración'
+        );
+    }
+
+    // Preventivo trimestral del servidor: enero, abril, julio y octubre.
+    foreach ([1, 4, 7, 10] as $month) {
+        $date = sprintf('2026-%02d-15', $month);
+        $push(
+            $date,
+            '22:00',
+            'Mantenimiento preventivo trimestral del servidor',
+            'preventivo',
+            $statusForDate($date),
+            'INV-2026-003',
+            'Samuel - Jefe de Soporte',
+            'Limpieza de ventiladores, revisión SMART de discos y actualización de firmware.',
+            'Centralizada'
+        );
+    }
+
+    // Revisión de batería del portátil: tres controles al año.
+    foreach ([2, 6, 10] as $month) {
+        $date = sprintf('2026-%02d-20', $month);
+        $push(
+            $date,
+            '11:00',
+            'Revisión preventiva de la batería del portátil',
+            'preventivo',
+            $statusForDate($date),
+            'INV-2026-002',
+            'Marta R. - Inventarios',
+            'Medición de ciclos de carga, calibración y revisión del cargador.',
+            'Centralizada'
+        );
+    }
+
+    // Intervenciones correctivas puntuales.
+    $push('2026-05-12', '14:30', 'Sustitución de la fuente de poder del iMac', 'correctivo', 'completado', 'INV-2026-001', 'Carlos J. - Soporte Técnico', 'Apagados repentinos. Se reemplaza la fuente interna y se validan temperaturas.', 'Relaciones Interinstitucionales');
+    $push('2026-07-28', '16:30', 'Reemplazo del ventilador hot-swap del servidor', 'correctivo', 'completado', 'INV-2026-003', 'Samuel - Jefe de Soporte', 'Alarma térmica en el CPU 2. Se sustituye el extractor 3 y se estabiliza el flujo de aire.', 'Centralizada');
+    $push('2026-07-30', '11:20', 'Desatasco y cambio de rodillos de la impresora', 'correctivo', 'completado', 'INV-2026-004', 'Carlos J. - Soporte Técnico', 'Atascos recurrentes en la bandeja trasera por desgaste de rodillos.', 'Administración');
+    $push('2026-08-05', '09:00', 'Diagnóstico del switch Cisco del ala C', 'correctivo', 'cancelado', 'INV-2026-006', 'Samuel - Jefe de Soporte', 'Equipo declarado pérdida total por sobretensión; se cancela la reparación y se gestiona reemplazo.', 'Centralizada');
+    $push('2026-09-03', '10:00', 'Cambio de batería del iPad Air', 'correctivo', 'completado', 'INV-2026-005', 'Carlos J. - Soporte Técnico', 'Autonomía reducida a menos de dos horas. Se instala batería de reemplazo.', 'Dirección de Despacho');
+    $push('2026-11-24', '15:00', 'Reemplazo del cargador del iPad Air', 'correctivo', 'programado', 'INV-2026-005', 'Carlos J. - Soporte Técnico', 'Cargador con contacto intermitente reportado por la Dirección de Despacho.', 'Dirección de Despacho');
+    $push('2026-12-02', '14:00', 'Sustitución preventiva de rodillos de la impresora', 'correctivo', 'programado', 'INV-2026-004', 'Carlos J. - Soporte Técnico', 'Cambio programado antes del cierre de año para evitar atascos.', 'Administración');
+
+    // Jornada de hoy: queda en proceso para demostrar el estado intermedio.
+    $push('2026-11-16', '10:00', 'Revisión preventiva de la batería del portátil', 'preventivo', 'en_proceso', 'INV-2026-002', 'Samuel - Jefe de Soporte', 'Diagnóstico de autonomía y calibración del controlador de carga.', 'Centralizada');
+
+    // Cierre anual sin equipo asociado.
+    $push('2026-12-18', '10:00', 'Revisión de cierre anual y etiquetado del inventario tecnológico', 'preventivo', 'programado', null, 'Marta R. - Inventarios', 'Verificación física de etiquetas, ubicaciones y estado general de los equipos.', 'Centralizada');
+
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare("INSERT IGNORE INTO maintenance_events
+            (id, asset_id, asset_name, title, type, status, `date`, `time`, technician, department, details)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        foreach ($rows as $row) {
+            $stmt->execute([
+                $row['id'],
+                $row['asset_id'],
+                $row['asset_name'],
+                $row['title'],
+                $row['type'],
+                $row['status'],
+                $row['date'],
+                $row['time'],
+                $row['technician'],
+                $row['department'],
+                $row['details'],
+            ]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        logDatabaseError("Error sembrando el calendario de mantenimientos", $e);
+    }
+}
+
 function migrateDatabase($pdo) {
     // 1. Verifica y añade la columna 'condition' si no existe (Migración en vivo para activos antiguos)
     try {
@@ -417,5 +588,19 @@ function migrateDatabase($pdo) {
             "Samuel",
             "Soporte TI"
         ]);
+    }
+
+    // 3. Crea y siembra el calendario de mantenimientos solo la primera vez.
+    //    Así, si el usuario borra todos los eventos, no reaparecen.
+    $maintenanceExists = true;
+    try {
+        $pdo->query("SELECT 1 FROM maintenance_events LIMIT 1");
+    } catch (Exception $e) {
+        $maintenanceExists = false;
+    }
+
+    if (!$maintenanceExists) {
+        ensureMaintenanceTable($pdo);
+        seedMaintenanceEvents($pdo);
     }
 }

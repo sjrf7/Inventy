@@ -112,3 +112,112 @@ export function updateAsset(id, updatedFields) {
       return updatedAsset;
     });
 }
+
+/* -------------------------------------------------------------------------- */
+/* Calendario de mantenimientos                                               */
+/* -------------------------------------------------------------------------- */
+
+let maintenanceEvents = [];
+
+/**
+ * Lee los errores de una respuesta de la API sin romper si el cuerpo no es JSON.
+ * @param {Response} response
+ * @returns {Promise<Error>}
+ */
+function readMaintenanceError(response) {
+  return response.json()
+    .then(payload => new Error(payload?.error || `Error de servidor HTTP ${response.status}`))
+    .catch(() => new Error(`Error de servidor HTTP ${response.status}`));
+}
+
+/**
+ * Carga los mantenimientos de un año desde la API PHP.
+ * @param {number} year
+ * @returns {Promise<Array>} Eventos del año solicitado
+ */
+export function loadMaintenanceEvents(year) {
+  return fetch(`api/maintenance.php?year=${encodeURIComponent(year)}`)
+    .then(response => {
+      if (!response.ok) return readMaintenanceError(response).then(error => { throw error; });
+      return response.json();
+    })
+    .then(data => {
+      maintenanceEvents = Array.isArray(data) ? data : [];
+      return maintenanceEvents;
+    })
+    .catch(error => {
+      console.error("Error cargando el calendario de mantenimientos:", error);
+      maintenanceEvents = [];
+      throw error;
+    });
+}
+
+/**
+ * Devuelve los mantenimientos cargados en memoria.
+ * @returns {Array}
+ */
+export function getMaintenanceEvents() {
+  return maintenanceEvents;
+}
+
+/**
+ * Crea un mantenimiento en el backend.
+ * @param {Object} event
+ * @returns {Promise<Object>}
+ */
+export function addMaintenanceEvent(event) {
+  return fetch("api/maintenance.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event)
+  })
+    .then(response => {
+      if (!response.ok) return readMaintenanceError(response).then(error => { throw error; });
+      return response.json();
+    })
+    .then(created => {
+      maintenanceEvents.push(created);
+      return created;
+    });
+}
+
+/**
+ * Actualiza un mantenimiento existente.
+ * @param {string} id
+ * @param {Object} event
+ * @returns {Promise<Object>}
+ */
+export function updateMaintenanceEvent(id, event) {
+  return fetch("api/maintenance.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...event, id })
+  })
+    .then(response => {
+      if (!response.ok) return readMaintenanceError(response).then(error => { throw error; });
+      return response.json();
+    })
+    .then(updated => {
+      const index = maintenanceEvents.findIndex(item => item.id === id);
+      if (index !== -1) maintenanceEvents[index] = updated;
+      return updated;
+    });
+}
+
+/**
+ * Elimina un mantenimiento del backend.
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+export function removeMaintenanceEvent(id) {
+  return fetch(`api/maintenance.php?id=${encodeURIComponent(id)}`, {
+    method: "DELETE"
+  })
+    .then(response => {
+      if (!response.ok) return readMaintenanceError(response).then(error => { throw error; });
+      return response.json();
+    })
+    .then(() => {
+      maintenanceEvents = maintenanceEvents.filter(item => item.id !== id);
+    });
+}

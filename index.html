@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap">
   <meta name="theme-color" content="#0A0C12">
-  <link rel="stylesheet" href="src/css/variables.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/base.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/components.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/views.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/login.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/motion.css?v=1.2.4">
-  <link rel="stylesheet" href="src/css/print.css?v=1.2.4">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/base.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/components.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/views.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/login.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/motion.css?v=1.2.5">
+  <link rel="stylesheet" href="src/css/print.css?v=1.2.5">
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 </head>
@@ -173,6 +173,19 @@
                   <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
                 </svg>
                 <span>Soporte Técnico</span>
+              </a>
+            </li>
+            <li class="nav-item" data-view="calendar">
+              <a href="#calendario">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                  <rect x="7" y="14" width="3" height="3" rx="0.5" />
+                  <rect x="14" y="14" width="3" height="3" rx="0.5" />
+                </svg>
+                <span>Calendario</span>
               </a>
             </li>
             <li class="nav-item" data-view="reports">
@@ -540,6 +553,98 @@
         </div>
       </section>
       
+      <!-- VISTA: CALENDARIO DE MANTENIMIENTO -->
+      <section id="view-calendar" class="view-panel" aria-label="Calendario de mantenimientos">
+        <div class="calendar-view">
+          <div class="calendar-toolbar">
+            <div class="calendar-toolbar-group">
+              <div class="calendar-year-switch" role="group" aria-label="Cambiar el año del cronograma">
+                <button type="button" class="calendar-icon-btn" id="calendar-prev-year" aria-label="Ver el año anterior">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <span class="calendar-year-label" id="calendar-year-label">2026</span>
+                <button type="button" class="calendar-icon-btn" id="calendar-next-year" aria-label="Ver el año siguiente">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
+
+              <button type="button" class="btn btn-secondary btn-sm" id="calendar-today">Hoy</button>
+
+              <div class="calendar-segmented" role="group" aria-label="Filtrar por tipo de mantenimiento">
+                <button type="button" data-calendar-filter="todos" aria-pressed="true">Todos</button>
+                <button type="button" data-calendar-filter="preventivo" aria-pressed="false">Preventivos</button>
+                <button type="button" data-calendar-filter="correctivo" aria-pressed="false">Correctivos</button>
+              </div>
+            </div>
+
+            <div class="calendar-toolbar-group">
+              <span class="calendar-status" id="calendar-status" role="status" aria-live="polite"></span>
+              <button type="button" class="btn btn-primary" id="btn-calendar-new">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span>Programar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="calendar-metrics" aria-label="Resumen del cronograma anual">
+            <div class="calendar-metric">
+              <span class="calendar-metric-label">Total del año</span>
+              <strong class="calendar-metric-value" id="calendar-stat-total">0</strong>
+              <span class="calendar-metric-note">Intervenciones registradas</span>
+            </div>
+            <div class="calendar-metric is-preventivo">
+              <span class="calendar-metric-label">Preventivos</span>
+              <strong class="calendar-metric-value" id="calendar-stat-preventivo">0</strong>
+              <span class="calendar-metric-note">Mantenimiento planificado</span>
+            </div>
+            <div class="calendar-metric is-correctivo">
+              <span class="calendar-metric-label">Correctivos</span>
+              <strong class="calendar-metric-value" id="calendar-stat-correctivo">0</strong>
+              <span class="calendar-metric-note">Atención de fallas</span>
+            </div>
+            <div class="calendar-metric is-completado">
+              <span class="calendar-metric-label">Completados</span>
+              <strong class="calendar-metric-value" id="calendar-stat-completado">0</strong>
+              <span class="calendar-metric-note">Intervenciones cerradas</span>
+            </div>
+          </div>
+
+          <div class="calendar-layout">
+            <div class="calendar-months" id="calendar-months">
+              <div class="calendar-loading">
+                <span class="calendar-spinner" aria-hidden="true"></span>
+                <p>Cargando el cronograma…</p>
+              </div>
+            </div>
+
+            <aside class="calendar-day-panel" aria-labelledby="calendar-day-title">
+              <div class="calendar-day-header">
+                <div class="calendar-day-heading" aria-live="polite" aria-atomic="true">
+                  <p class="calendar-day-eyebrow" id="calendar-day-eyebrow">Día seleccionado</p>
+                  <h2 class="calendar-day-title" id="calendar-day-title">Selecciona un día</h2>
+                  <p class="calendar-day-subtitle" id="calendar-day-subtitle">El detalle de los mantenimientos aparecerá aquí.</p>
+                </div>
+                <button type="button" class="calendar-add-day-btn" id="btn-calendar-day-new" aria-label="Programar un mantenimiento en el día seleccionado" title="Programar en este día">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="calendar-day-list" id="calendar-day-list"></div>
+            </aside>
+          </div>
+        </div>
+      </section>
+      
       <!-- VISTA: INFORMES -->
       <section id="view-reports" class="view-panel">
         <div class="reports-layout">
@@ -819,7 +924,90 @@
     </div>
   </div>
   
+  <!-- MODAL: PROGRAMAR / EDITAR MANTENIMIENTO -->
+  <div class="modal-overlay" id="modal-maintenance" role="dialog" aria-modal="true" aria-labelledby="maintenance-modal-title">
+    <div class="modal-container" style="max-width: 660px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="maintenance-modal-title">Programar mantenimiento</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-maintenance" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="maintenance-form" novalidate>
+        <input type="hidden" id="maintenance-id" value="">
+
+        <div class="modal-body" style="gap:16px;">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label" for="maintenance-title">Título del mantenimiento *</label>
+              <input type="text" class="form-input" id="maintenance-title" maxlength="255" autocomplete="off" placeholder="Ej: Mantenimiento preventivo del servidor" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="maintenance-type">Tipo *</label>
+              <select class="form-select" id="maintenance-type" required>
+                <option value="preventivo">Preventivo</option>
+                <option value="correctivo">Correctivo</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="maintenance-status">Estado *</label>
+              <select class="form-select" id="maintenance-status" required>
+                <option value="programado">Programado</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="completado">Completado</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="maintenance-date">Fecha *</label>
+              <input type="date" class="form-input" id="maintenance-date" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="maintenance-time">Hora</label>
+              <input type="time" class="form-input" id="maintenance-time">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label" for="maintenance-asset">Equipo relacionado</label>
+              <select class="form-select" id="maintenance-asset">
+                <option value="">Sin equipo específico</option>
+                <!-- Opciones cargadas con JavaScript -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="maintenance-technician">Técnico responsable</label>
+              <input type="text" class="form-input" id="maintenance-technician" maxlength="255" autocomplete="off" placeholder="Nombre del técnico">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="maintenance-department">Dirección / Ubicación</label>
+              <input type="text" class="form-input" id="maintenance-department" maxlength="255" autocomplete="off" placeholder="Dirección donde se realiza">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label" for="maintenance-details">Detalle de la intervención</label>
+              <textarea class="form-textarea" id="maintenance-details" maxlength="2000" placeholder="Alcance, repuestos o notas relevantes."></textarea>
+            </div>
+          </div>
+
+          <p class="calendar-form-error" id="maintenance-error" role="alert" hidden></p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-maintenance">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-maintenance">Guardar mantenimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
   <!-- Scripts -->
-  <script type="module" src="src/js/main.js?v=1.2.4"></script>
+  <script type="module" src="src/js/main.js?v=1.2.5"></script>
 </body>
 </html>

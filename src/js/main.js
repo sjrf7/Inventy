@@ -5,11 +5,12 @@ import { initDashboard } from './views/dashboard.js';
 import { renderInventoryList } from './views/inventory.js';
 import { setupTransfersView, renderTransfersTimeline } from './views/transfers.js';
 import { setupSupportView, renderPendingSupportList } from './views/support.js';
+import { setupCalendarView } from './views/calendar.js';
 import { generateReport } from './views/reports.js';
 import { openAssetDetailModal, openAssetFormModal } from './components/modals.js';
 import { convertToBase64, getLocalISOTime, getAssetFallbackImage, escapeAttr, escapeHtml, getDepartmentOptions } from './utils.js';
 import { initMotion, closeModal, closeAllModals, revealPreview, runThemeTransition } from './motion.js';
-import { initAuth } from './auth.js?v=1.2.4';
+import { initAuth } from './auth.js?v=1.2.5';
 
 let uploadedImageBase64 = null;
 let activeDetailAssetId = null;
@@ -161,6 +162,8 @@ function renderView(viewName) {
         }
       } catch (e) {}
     }
+  } else if (viewName === "calendar") {
+    setupCalendarView(assets, STATUSES);
   } else if (viewName === "reports") {
     generateReport(assets, STATUSES, DEPARTMENTS);
   }

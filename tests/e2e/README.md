@@ -67,6 +67,8 @@ INVENTY_BASE_URL=http://192.168.0.200:8000 npm run test:e2e
 - Impresión: solo el informe, ocultando la interfaz y con tinta oscura.
 - Tema claro/oscuro, `aria-pressed` y `theme-color`.
 - Soporte y traspasos: formularios y combobox accesibles.
+- Calendario: 12 meses, día seleccionado, filtros, teclado y CRUD de un
+  mantenimiento temporal (crear, completar y eliminar).
 - Formulario de bienes: cierre directo sin cambios, confirmación al descartar
   (botón, Escape y clic en el fondo).
 - Confirmación al desincorporar desde la ficha y desde soporte.
@@ -76,9 +78,11 @@ INVENTY_BASE_URL=http://192.168.0.200:8000 npm run test:e2e
 
 ## Datos
 
-Las pruebas no guardan cambios: abren formularios, cancelan las confirmaciones y
-descartan los borradores. Aun así, conviene ejecutarlas contra una copia local de
-la base de datos.
+Las pruebas no guardan cambios de forma permanente: abren formularios, cancelan
+las confirmaciones y descartan los borradores. El caso del calendario crea un
+evento temporal y lo elimina al terminar; si una aserción falla antes, la
+limpieza defensiva lo borra por API. Aun así, conviene ejecutar la suite contra
+una copia local de la base de datos.
 
 ## Estructura
 
