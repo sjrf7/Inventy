@@ -556,6 +556,29 @@
       <!-- VISTA: CALENDARIO DE MANTENIMIENTO -->
       <section id="view-calendar" class="view-panel" aria-label="Calendario de mantenimientos">
         <div class="calendar-view">
+          <div class="calendar-metrics" aria-label="Resumen del cronograma anual">
+            <div class="calendar-metric">
+              <span class="calendar-metric-label">Total del año</span>
+              <strong class="calendar-metric-value" id="calendar-stat-total">0</strong>
+              <span class="calendar-metric-note">Intervenciones registradas</span>
+            </div>
+            <div class="calendar-metric is-preventivo">
+              <span class="calendar-metric-label">Preventivos</span>
+              <strong class="calendar-metric-value" id="calendar-stat-preventivo">0</strong>
+              <span class="calendar-metric-note">Mantenimiento planificado</span>
+            </div>
+            <div class="calendar-metric is-correctivo">
+              <span class="calendar-metric-label">Correctivos</span>
+              <strong class="calendar-metric-value" id="calendar-stat-correctivo">0</strong>
+              <span class="calendar-metric-note">Atención de fallas</span>
+            </div>
+            <div class="calendar-metric is-completado">
+              <span class="calendar-metric-label">Completados</span>
+              <strong class="calendar-metric-value" id="calendar-stat-completado">0</strong>
+              <span class="calendar-metric-note">Intervenciones cerradas</span>
+            </div>
+          </div>
+
           <div class="calendar-toolbar">
             <div class="calendar-toolbar-group">
               <div class="calendar-year-switch" role="group" aria-label="Cambiar el periodo del cronograma">
@@ -594,29 +617,6 @@
                 </svg>
                 <span>Programar</span>
               </button>
-            </div>
-          </div>
-
-          <div class="calendar-metrics" aria-label="Resumen del cronograma anual">
-            <div class="calendar-metric">
-              <span class="calendar-metric-label">Total del año</span>
-              <strong class="calendar-metric-value" id="calendar-stat-total">0</strong>
-              <span class="calendar-metric-note">Intervenciones registradas</span>
-            </div>
-            <div class="calendar-metric is-preventivo">
-              <span class="calendar-metric-label">Preventivos</span>
-              <strong class="calendar-metric-value" id="calendar-stat-preventivo">0</strong>
-              <span class="calendar-metric-note">Mantenimiento planificado</span>
-            </div>
-            <div class="calendar-metric is-correctivo">
-              <span class="calendar-metric-label">Correctivos</span>
-              <strong class="calendar-metric-value" id="calendar-stat-correctivo">0</strong>
-              <span class="calendar-metric-note">Atención de fallas</span>
-            </div>
-            <div class="calendar-metric is-completado">
-              <span class="calendar-metric-label">Completados</span>
-              <strong class="calendar-metric-value" id="calendar-stat-completado">0</strong>
-              <span class="calendar-metric-note">Intervenciones cerradas</span>
             </div>
           </div>
 
